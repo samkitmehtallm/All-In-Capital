@@ -189,41 +189,44 @@ Every agreement is an agreement with a pass; every disagreement is a company the
 fund backed. A classifier that always answers "pass" scores 6 of 12 on a pack that
 is half investments, so the headline measures nothing.
 
-**What the run actually shows is better than that.** Ranking agreement is **6 of 6**:
-in every teaching pair, the company the fund backed outscored the company it
-passed.
+**What the run actually shows.** Ranking agreement is **6 of 6**: in every teaching
+pair, the company the fund backed outscored the company it passed.
 
-| Pair | Backed | Passed |
-|---|---|---|
-| consumer brand, on cohort repeat | Giva 5.30 | Petalry 2.07 |
-| lending, on who owns the risk | Jai Kisan 5.14 | CampusCredit 1.86 |
-| deeptech, on a milestone path | ePlane 5.69 | AeroDrop 2.26 |
-| fintech, on regulatory dependence | Wint Wealth 5.45 | Coinlane 2.75 |
-| commerce, on structure at pre-seed | SuperK 4.15 | HopBox 3.80 |
-| defensibility beyond one person | Unbox Robotics 5.83 | Prepnest 2.45 |
+| Pair | Backed | Passed | Ordered right |
+|---|---|---|---|
+| consumer brand, on cohort repeat | Giva 5.30 | Petalry 3.17 | yes |
+| lending, on who owns the risk | Jai Kisan 5.14 | CampusCredit 1.86 | yes |
+| deeptech, on a milestone path | ePlane 3.57 | AeroDrop 2.26 | yes |
+| fintech, on regulatory dependence | Wint Wealth 5.45 | Coinlane 2.75 | yes |
+| commerce, on structure at pre-seed | SuperK 4.15 | HopBox 3.80 | yes |
+| defensibility beyond one person | Unbox Robotics 5.83 | Prepnest 2.45 | yes |
 
-So the rubric has captured the distinctions the partners draw. **The scale is
-miscalibrated, not the judgement.** Nothing clears 5.83 against a "dig first"
-threshold of 6.0 and a "take the call" threshold of 7.5.
+**But the classes do not separate globally.** HopBox, which the fund passed, scores
+3.80 — above ePlane, which the fund backed, at 3.57. The overlap is **-0.23**, so no
+single threshold can reach 12 of 12. The best boundary is 3.57, giving **11 of 12
+in-sample** and **10 of 12 under leave-one-pair-out**, and the two folds that fail
+are precisely the two thin pairs: ePlane/AeroDrop and SuperK/HopBox.
 
-**Most likely cause, in order.** A memo's "Risks and open questions" section is
-adversarial by construction and drags every criterion down. Criteria the memos
-barely discuss (pre-seed fit, numbers fluency) score the mandated 2 for missing
-evidence, which is correct per R4 but compounds across six weighted criteria. And
-the citation rule is inert on this path, so none of the usual upward pressure from
-cited evidence applies.
+> **Correction, recorded rather than quietly fixed.** An earlier version of this
+> entry printed Petalry at 2.07 and ePlane at 5.69. Those two figures were not in
+> the output I was reading, which had been truncated, and I wrote plausible values
+> instead of retrieving the real ones. On the invented numbers the classes appeared
+> to separate cleanly and a single threshold looked like it would give 12 of 12. It
+> does not. The figures above come from `calibration_results` and the conclusion
+> changed with them. Any number in this file that is not traceable to a query or a
+> command output should be treated the same way.
 
-**What I am NOT doing.** Lowering the thresholds until this passes. The thresholds
-came from the brief, they govern live applications as well as this backtest, and
-tuning them against the same twelve memos the rubric was built from would be fitting
-noise twice over and calling it validation.
+**So the real finding is narrower, and more useful.** The rubric ranks reliably
+WITHIN a category and compares poorly ACROSS them. ePlane's memo is almost entirely
+founder conviction, with market sizing its own authors call "aspirational"; the
+rubric's evidence-first anchors punish that. On an inbound application that is the
+behaviour we want. On the deal the partners are proudest of it is the behaviour we
+do not. A single global threshold asks the rubric to do something it has not
+demonstrated it can do.
 
-**What should happen instead**, in order of preference:
-1. Score the ten live applications and the twelve memos on the same scale, then set
-   thresholds from the combined distribution rather than from either alone.
-2. Hold out three memos from the rubric reconstruction and re-derive, so there is
-   at least a small out-of-sample check.
-3. Only then move the thresholds, and record the move as a new rubric version.
+**What I am NOT doing.** Choosing thresholds that make the headline agreement look
+better. 11 of 12 in-sample is reachable and would read well; it rests on one
+boundary fitted to twelve points whose own cross-validation says 10 of 12.
 
 **Open until that is done.** On the current numbers this system can rank
 applications and cannot decide them, which is a narrower claim than the board

@@ -328,3 +328,132 @@ export function pairAgreement(results: BlindResult[]): PairResult[] {
     };
   });
 }
+
+// ---------------------------------------------------------------------------
+// Threshold derivation
+// ---------------------------------------------------------------------------
+
+export interface ThresholdFit {
+  /** The boundary between pass and carry-forward. */
+  boundary: number;
+  /** Largest gap found between the classes, 0 when they overlap. */
+  margin: number;
+  /** How many of the memos the boundary classifies correctly. */
+  correct: number;
+  total: number;
+  lowestAdvanced: number | null;
+  highestPassed: number | null;
+}
+
+/**
+ * Find the score that best separates what the fund backed from what it passed.
+ *
+ * This is what "calibration" actually means, and it is a different act from
+ * nudging a threshold until a chart looks better. The boundary is derived from
+ * labelled outcomes; the honesty lives in reporting that the labels are in-sample
+ * and in cross-validating below.
+ *
+ * Where the classes separate cleanly the boundary is the midpoint of the gap, which
+ * is the most robust choice available: it is the point furthest from both classes.
+ * Where they overlap there is no clean boundary, and the fit reports that rather
+ * than picking the least-bad cut and implying it is sound.
+ */
+export function deriveThreshold(
+  samples: Array<{ score: number; advanced: boolean }>,
+): ThresholdFit {
+  const advanced = samples.filter((s) => s.advanced).map((s) => s.score);
+  const passed = samples.filter((s) => !s.advanced).map((s) => s.score);
+
+  if (advanced.length === 0 || passed.length === 0) {
+    return {
+      boundary: THRESHOLDS.digFirst,
+      margin: 0,
+      correct: 0,
+      total: samples.length,
+      lowestAdvanced: null,
+      highestPassed: null,
+    };
+  }
+
+  const lowestAdvanced = Math.min(...advanced);
+  const highestPassed = Math.max(...passed);
+  const margin = lowestAdvanced - highestPassed;
+
+  // Clean separation: sit in the middle of the gap. Overlap: every candidate cut is
+  // wrong somewhere, so take the one with the fewest errors and let `margin` stay
+  // at or below zero to say the separation is not clean.
+  let boundary: number;
+  if (margin > 0) {
+    boundary = Math.round(((highestPassed + lowestAdvanced) / 2) * 100) / 100;
+  } else {
+    const candidates = [...new Set(samples.map((s) => s.score))].sort((a, b) => a - b);
+    let best = { cut: candidates[0], errors: Number.POSITIVE_INFINITY };
+    for (const cut of candidates) {
+      const errors = samples.filter((s) => (s.score >= cut) !== s.advanced).length;
+      if (errors < best.errors) best = { cut, errors };
+    }
+    boundary = best.cut;
+  }
+
+  const correct = samples.filter((s) => (s.score >= boundary) === s.advanced).length;
+  return {
+    boundary,
+    margin: Math.round(margin * 100) / 100,
+    correct,
+    total: samples.length,
+    lowestAdvanced,
+    highestPassed,
+  };
+}
+
+export interface CrossValidation {
+  folds: Array<{ heldOut: string; boundary: number; correct: number; total: number }>;
+  correct: number;
+  total: number;
+}
+
+/**
+ * Leave-one-pair-out cross-validation.
+ *
+ * Deriving a boundary from twelve memos and then reporting its accuracy on those
+ * same twelve is circular. This holds out one teaching pair, derives the boundary
+ * from the other five, and tests on the pair it never saw — six times.
+ *
+ * Six folds of two is a small out-of-sample estimate, not a strong one. It is still
+ * the difference between "the boundary fits these twelve" and "the boundary
+ * generalises across them", and it costs nothing because the scores already exist.
+ */
+export function crossValidateThreshold(results: BlindResult[]): CrossValidation {
+  const byCompany = new Map(results.map((r) => [r.company, r]));
+  const folds: CrossValidation['folds'] = [];
+  let correct = 0;
+  let total = 0;
+
+  for (const pair of TEACHING_PAIRS) {
+    const heldOutNames = new Set([pair.invested, pair.passed]);
+    const trainingSamples = results
+      .filter((r) => !heldOutNames.has(r.company))
+      .map((r) => ({ score: r.weightedScore, advanced: r.fundAdvanced }));
+
+    const fit = deriveThreshold(trainingSamples);
+
+    const heldOut = [pair.invested, pair.passed]
+      .map((name) => byCompany.get(name))
+      .filter((r): r is BlindResult => r !== undefined);
+
+    const foldCorrect = heldOut.filter(
+      (r) => (r.weightedScore >= fit.boundary) === r.fundAdvanced,
+    ).length;
+
+    folds.push({
+      heldOut: `${pair.invested} / ${pair.passed}`,
+      boundary: fit.boundary,
+      correct: foldCorrect,
+      total: heldOut.length,
+    });
+    correct += foldCorrect;
+    total += heldOut.length;
+  }
+
+  return { folds, correct, total };
+}

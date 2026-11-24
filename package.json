@@ -18,7 +18,8 @@
     "contrast": "tsx scripts/check-contrast.ts",
     "export:sql": "tsx scripts/export-seed-sql.ts",
     "gateway": "npx -y @portkey-ai/gateway",
-    "live-check": "tsx scripts/live-check.ts"
+    "live-check": "tsx scripts/live-check.ts",
+    "thresholds": "tsx scripts/derive-thresholds.ts"
   },
   "dependencies": {
     "@google/genai": "^3.6.1",
