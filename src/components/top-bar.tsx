@@ -118,7 +118,7 @@ export function TopBar() {
             href={item.href}
             aria-current={isActive(item.href) ? 'page' : undefined}
             className={`flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] ${
-              isActive(item.href) ? 'text-[var(--color-cobalt)]' : 'text-[var(--color-muted)]'
+              isActive(item.href) ? 'text-[var(--color-signal)]' : 'text-[var(--color-muted)]'
             }`}
           >
             {item.label}

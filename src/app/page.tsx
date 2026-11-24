@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { getBoard, LANES, type BoardCard } from '../lib/board';
 
 /*
@@ -128,7 +130,10 @@ function formatSlot(iso: string): string {
 
 function Card({ card }: { card: BoardCard }) {
   return (
-    <article className="card motion-quick p-3.5 hover:border-[var(--color-cobalt)]">
+    <Link
+      href={`/a/${card.slug}`}
+      className="card motion-quick block p-3.5 hover:border-[var(--color-signal)]"
+    >
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-[14.5px] font-semibold leading-tight">{card.company}</h3>
         {card.ratingWord ? (
@@ -182,6 +187,6 @@ function Card({ card }: { card: BoardCard }) {
           <dd className="num">{card.deckPages + card.formPages} pages</dd>
         </div>
       </dl>
-    </article>
+    </Link>
   );
 }
