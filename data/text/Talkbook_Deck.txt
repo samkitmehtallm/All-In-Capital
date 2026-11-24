@@ -1,0 +1,119 @@
+=== page 1 ===
+Talkbook
+AI call summaries and CRM updates for Indian sales teams
+Pre-seed  |  Raising INR 2 Cr  |  Chennai
+=== page 2 ===
+Sales calls disappear into thin air
+Talkbook 3
+Reps hate CRM entry
+Reps spend about 5 hours a 
+week on notes and CRM 
+updates.
+Managers cannot coach
+Managers hear about 3% of 
+their team's calls.
+Indian languages break 
+tools
+Hindi-English and Tamil-
+English calls are poorly 
+transcribed by global tools.
+=== page 3 ===
+Why now
+Talkbook 4
+Better speech models
+Code-mixed speech can now 
+be transcribed far more 
+accurately.
+Cheaper inference
+Cost per call minute has fallen 
+8x in two years.
+Sales teams scaling
+BFSI, edtech and real estate 
+teams are hiring inside sales 
+fast.
+=== page 4 ===
+Call, summarise, update
+Talkbook 5
+1
+Call
+Reps call as usual from their 
+phone or dialer.
+2
+Summarise
+Talkbook transcribes and 
+summarises in the rep's language.
+3
+Update
+Fields in the CRM fill in 
+automatically.
+=== page 5 ===
+Traction: 16 paying teams in 4 months
+Talkbook 6
+Jul Aug Sep Oct
+40
+85
+140
+210
+Monthly recurring revenue (INR thousand)
+16
+paying teams
+340
+paid seats
+INR 2.1 L
+monthly recurring revenue
+=== page 6 ===
+Market size: how we got there
+Talkbook 7
+TAM INR 4,200 Cr 7M sales reps in India x INR 6,000 per seat a year
+SAM INR 660 Cr
+1.1M reps in inside-sales teams (BFSI, edtech, SaaS, real estate) x 
+INR 6,000
+SOM INR 27 Cr In 3 years: 45,000 seats x INR 6,000
+Rep counts from industry estimates. INR 6,000 a seat a year is our current price.
+=== page 7 ===
+Go-to-market and CAC
+Talkbook 8
+Founder-led outbound
+9 of 16 teams
+Customer referrals
+5 of 16 teams
+CRM consultants
+2 of 16 teams
+INR 48,000
+CAC per team
+~5 months
+payback
+70%
+gross margin
+Average team pays INR 13,000 a 
+month. CAC counts founder time at 
+a nominal salary.
+=== page 8 ===
+How we are different
+Talkbook 9
+Talkbook Global call-AI tools Meeting note-takers
+Hindi, Tamil, Telugu code-mixed Strong Weak Weak
+Price per seat a month INR 500 INR 9,000+ INR 1,500
+Auto CRM update Yes Yes Limited
+Built for India Yes No No
+=== page 9 ===
+The team
+Talkbook 10
+Arun Kumar, CEO
+6 years as a product lead at a CRM software 
+company.
+Meenakshi S, CTO
+4 years in speech ML at a speech-technology 
+company.
+Team of 8.
+=== page 10 ===
+The ask: INR 2 Cr
+Talkbook 11
+50%
+Engineering and language 
+models
+30%
+Sales
+20%
+Security and operations
+In 12 months: 80 paying teams and INR 12 L monthly recurring revenue.

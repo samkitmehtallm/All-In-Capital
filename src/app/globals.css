@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+
+/*
+ * Graphite & Cobalt.
+ *
+ * A working instrument for a partner who has thirty seconds, not a marketing site.
+ * One signal colour, hairlines instead of shadows, and every number in a mono face
+ * with tabular figures so columns of rupee figures line up on the decimal.
+ *
+ * Every colour is a token. scripts/check-contrast.ts walks these pairs and fails if
+ * any text/background combination drops below WCAG AA in either theme — the palette
+ * is checked rather than eyeballed.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* -- light ------------------------------------------------------------- */
+  --color-paper: #f6f7f4;
+  --color-card: #ffffff;
+  --color-ink: #14171c;
+  --color-muted: #4a515c;
+  --color-subtle: #6b7280;
+  --color-hairline: #e3e6e1;
+
+  /* the single signal colour */
+  --color-cobalt: #2747f5;
+  --color-cobalt-hover: #1c36d0;
+
+  /* status, each on a tint */
+  --color-good: #1e7a46;
+  --color-good-tint: #e8f3ec;
+  --color-warn: #9a5b00;
+  --color-warn-tint: #fbf0e0;
+  --color-bad: #b42318;
+  --color-bad-tint: #fcebe9;
+
+  /* -- shape ------------------------------------------------------------- */
+  --radius-card: 12px;
+  --radius-chip: 10px;
+
+  /* one soft shadow, for floating things only */
+  --shadow-float: 0 8px 24px -8px rgb(20 23 28 / 0.18);
+
+  /* -- type -------------------------------------------------------------- */
+  --font-display: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  /* -- motion: fast and functional only ---------------------------------- */
+  --ease-out-quick: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/*
+ * Dark is a re-pointing of the same tokens, not a second palette. Cobalt lightens
+ * to #7F95FF because #2747F5 on #0E1013 fails AA for body text.
+ */
+.dark {
+  --color-paper: #0e1013;
+  --color-card: #16191e;
+  --color-ink: #eceef1;
+  --color-muted: #a4acb8;
+  --color-subtle: #868e9b;
+  --color-hairline: #262b33;
+
+  --color-cobalt: #7f95ff;
+  --color-cobalt-hover: #9aabff;
+
+  --color-good: #4ab77a;
+  --color-good-tint: #11291c;
+  --color-warn: #d79433;
+  --color-warn-tint: #2a1f0d;
+  --color-bad: #f08076;
+  --color-bad-tint: #2c1512;
+
+  --shadow-float: 0 8px 24px -8px rgb(0 0 0 / 0.6);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  /* Every number, everywhere, with tabular figures. */
+  .num,
+  code,
+  kbd {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Visible focus, never removed. */
+  :focus-visible {
+    outline: 2px solid var(--color-cobalt);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-cobalt) 22%, transparent);
+  }
+}
+
+@layer utilities {
+  /* A hairline, which is what this design uses instead of a shadow. */
+  .hairline {
+    border: 1px solid var(--color-hairline);
+  }
+
+  .card {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-card);
+  }
+
+  /* 120–180ms, transform and opacity only. */
+  .motion-quick {
+    transition:
+      transform 140ms var(--ease-out-quick),
+      opacity 140ms var(--ease-out-quick),
+      background-color 140ms var(--ease-out-quick),
+      border-color 140ms var(--ease-out-quick);
+  }
+}
+
+/* No scroll-jacking, no parallax, and nothing that moves for its own sake. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Wide content scrolls inside its own container; the page body never does. */
+.scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}

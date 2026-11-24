@@ -1,0 +1,85 @@
+=== page 1 ===
+RentRoute
+Pay your rent with your credit card
+Pre-seed  |  Raising INR 1.8 Cr  |  Bengaluru
+=== page 2 ===
+Rent is the biggest bill
+RentRoute 3
+Biggest expense
+Rent takes 25 to 40% of a 
+young professional's income.
+Cards sit idle
+Landlords will not accept 
+cards, so reward points go 
+unused.
+Timing gap
+Rent is due on the 1st. Salary 
+may arrive later.
+=== page 3 ===
+Add, pay, done
+RentRoute 4
+1
+Add rent details
+Enter your landlord's bank details 
+once.
+2
+Pay by card
+Pay rent with any credit card.
+3
+Landlord gets cash
+Rent reaches the landlord's bank 
+account within a day.
+=== page 4 ===
+Traction: INR 6.1 Cr of rent paid in 4 months
+RentRoute 5
+Jul Aug Sep Oct
+0.4
+1.0
+1.9
+2.8
+Monthly rent paid (INR Cr)
+1,900
+users
+2,400
+rent payments
+INR 11 L
+revenue (1.8% fee)
+=== page 5 ===
+The market
+RentRoute 6
+INR 1.5 lakh Cr
+annual urban rent paid in India
+Capturing just 1% would mean INR 1,500 Cr 
+of annual rent volume.
+=== page 6 ===
+Competition
+RentRoute 7
+We have no direct competitors.
+Existing payment apps focus on other bills like electricity, mobile and credit 
+card repayments.
+=== page 7 ===
+How we make money
+RentRoute 8
+Platform fee
+Users pay 1.8% of the rent amount.
+Next
+Referral income from card issuers is coming.
+=== page 8 ===
+The team
+RentRoute 9
+Sameer Qureshi, CEO
+Product manager at a fintech for 4 years. 
+Launched two payments features.
+Divya Menon, Growth
+5 years in consumer marketing.
+Engineering handled by contract developers.
+=== page 9 ===
+The ask: INR 1.8 Cr
+RentRoute 10
+55%
+Marketing
+25%
+Engineering
+20%
+Operations
+In 12 months: INR 20 Cr monthly rent volume.

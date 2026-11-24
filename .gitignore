@@ -1,0 +1,24 @@
+# Secrets — never commit
+.env
+.env.local
+.env*.local
+
+# Local data store and traces. These hold founder personal data (names, emails,
+# LinkedIn URLs) from the forms, which the fund's founder agreement says it will
+# not pass to outside parties. A public repo must not carry them.
+.data/
+*.jsonl
+
+# Fine-tuning data (brief §11: data git-ignored)
+scripts/b6/data/
+scripts/b6/runs/
+
+# Build
+.next/
+out/
+node_modules/
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store

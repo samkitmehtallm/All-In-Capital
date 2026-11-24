@@ -1,0 +1,46 @@
+{
+  "name": "all-in-capital",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/**/*.test.ts",
+    "seed": "tsx scripts/seed.ts",
+    "pipeline": "tsx scripts/run-pipeline.ts",
+    "worker": "tsx scripts/worker.ts",
+    "calibrate": "tsx scripts/calibrate.ts",
+    "cost": "tsx scripts/cost-report.ts",
+    "loadtest": "tsx scripts/load-test.ts",
+    "contrast": "tsx scripts/check-contrast.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^3.6.1",
+    "@supabase/supabase-js": "^2.119.2",
+    "googleapis": "^190.0.0",
+    "next": "15.5.29",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1",
+    "unpdf": "^2.2.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "dotenv": "^16.4.7",
+    "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "magic-string": "^0.30.17"
+    }
+  }
+}
