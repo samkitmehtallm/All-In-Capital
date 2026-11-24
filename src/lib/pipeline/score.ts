@@ -70,6 +70,20 @@ export interface ScoreEvidence {
   checks: ReconCheck[];
   /** Redacted founder backgrounds ([F1], [F2]). */
   founderBackgrounds: string[];
+  /**
+   * What was confirmed outside the application, if research ran.
+   *
+   * This is the ONLY thing that justifies "high" confidence: the brief defines high
+   * as verified externally, med as deck and form agreeing, low as deck only. Without
+   * research nothing can be high, and the scorer is told so rather than left to
+   * invent a basis for it.
+   */
+  externalConfirmations?: Array<{
+    domain: string;
+    confirms: string;
+    quote: string;
+    isPrimarySource: boolean;
+  }>;
 }
 
 export interface ScoreCriterionInput {
@@ -238,6 +252,22 @@ function buildUser(
   if (corrections.length) {
     sections.push(`\nCorrections worth remembering:\n${corrections.map((c) => `- ${c}`).join('\n')}`);
   }
+
+  const external = evidence.externalConfirmations ?? [];
+  sections.push(
+    external.length
+      ? `\nConfirmed outside the application:\n` +
+          external
+            .map(
+              (e) =>
+                `- ${e.isPrimarySource ? 'primary source' : 'directory'} (${e.domain}): ` +
+                `${e.confirms} — "${e.quote}"`,
+            )
+            .join('\n')
+      : `\nConfirmed outside the application: nothing. Either research has not run, or ` +
+          `every page found was about a different company or person. Confidence cannot ` +
+          `be "high" for any criterion.`,
+  );
 
   return sections.join('\n');
 }

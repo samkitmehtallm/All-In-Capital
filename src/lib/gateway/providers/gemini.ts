@@ -68,6 +68,43 @@ export const geminiProvider: Provider = {
     }
   },
 
+  /**
+   * Google Search grounding.
+   *
+   * Returns the sources the model consulted, not its prose. The prose is discarded
+   * on purpose: the research step fetches each page itself and extracts a verbatim
+   * quote from it, because a grounded summary is a claim about a page rather than
+   * a quotation from one, and this system does not accept the former.
+   */
+  async searchGrounded(model: string, query: string) {
+    const ai = getClient();
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: query }] }],
+        config: {
+          tools: [{ googleSearch: {} }],
+          temperature: 0,
+        },
+      });
+
+      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+      const sources = chunks
+        .map((c) => ({ url: c.web?.uri ?? '', title: c.web?.title ?? '' }))
+        .filter((s) => s.url);
+
+      const usage = response.usageMetadata;
+      return {
+        sources,
+        text: response.text ?? '',
+        inputTokens: usage?.promptTokenCount ?? 0,
+        outputTokens: usage?.candidatesTokenCount ?? 0,
+      };
+    } catch (error) {
+      throw toProviderError(error);
+    }
+  },
+
   async embed(model: string, texts: string[], dim = 768) {
     const ai = getClient();
     try {

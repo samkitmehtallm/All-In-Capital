@@ -24,6 +24,7 @@ import { evaluateG4 } from '../src/lib/gates/g4-integrity';
 import { extractClaims } from '../src/lib/pipeline/extract-claims';
 import { evidenceCoverage, rankAll, rankOne, type RankInput, type RankOutput } from '../src/lib/pipeline/rank';
 import { reconcile, type ReconCheck } from '../src/lib/pipeline/reconcile';
+import { buildQueryPlan, research, type Finding } from '../src/lib/pipeline/research';
 import { scoreApplication } from '../src/lib/pipeline/score';
 import { lensForSector, resolveWeights } from '../src/lib/rubric';
 import type { Criterion } from '../src/lib/rubric';
@@ -39,6 +40,15 @@ const noScore = args.includes('--no-score');
  * stored claims and recomputes everything downstream of them.
  */
 const recheck = args.includes('--recheck');
+/**
+ * Research is opt-in per run.
+ *
+ * It is the most expensive step by some distance — each search costs roughly forty
+ * times a normal call, because the web plugin charges per result — and it is the
+ * only step that reaches outside the fund's own files. Making it a flag means a
+ * routine re-score does not silently spend on it.
+ */
+const withResearch = args.includes('--research');
 const RUBRIC_VERSION = 1;
 
 interface AppRow {
@@ -73,9 +83,10 @@ async function main() {
 
     // -- load what ingest already produced -----------------------------------
     const documents = await store.select<{ id: string; kind: string }>('documents', { application_id: app.id });
-    const founders = await store.select<{ token: string; background_form: string }>('founders', {
-      application_id: app.id,
-    });
+    const founders = await store.select<{ token: string; role: string | null; background_form: string }>(
+      'founders',
+      { application_id: app.id },
+    );
     const formFields = await store.select<{ label: string; value: string }>('form_fields', {
       application_id: app.id,
     });
@@ -193,6 +204,73 @@ async function main() {
       }
     }
 
+    // -- step 4: research -----------------------------------------------------
+    let confirmedFindings: Finding[] = [];
+    if (withResearch) {
+      const plan = buildQueryPlan({
+        company: app.company_name,
+        oneLiner: app.one_liner,
+        location: (app.location as string | null) ?? null,
+        sector: app.sector_declared,
+        founders: contacts.map((c, i) => ({
+          token: c.token,
+          fullName: c.fullName,
+          role: founders[i]?.role ?? null,
+        })),
+      });
+
+      const outcome = await research({
+        applicationId: app.id,
+        plan,
+        company: app.company_name,
+        subjectDescription:
+          `${app.company_name}: ${app.one_liner ?? ''} Based in ${app.location ?? 'India'}. ` +
+          founders.map((f) => `[${f.token}] ${f.role ?? 'founder'}`).join('; '),
+        founders: contacts,
+        traceId,
+      });
+      totalCost += outcome.costInr;
+      confirmedFindings = outcome.confirmed;
+
+      for (const q of outcome.queries) {
+        const [queryRow] = await store.insert('research_queries', {
+          application_id: app.id,
+          intent: q.intent,
+          subject_token: q.subjectToken,
+          query: q.query,
+          provider: 'openrouter-web',
+          result_count: q.resultCount,
+          was_empty: q.wasEmpty,
+        });
+        // Findings are attached to the first query of their intent. The exact
+        // pairing matters less than every finding and every query being recorded.
+        void queryRow;
+      }
+
+      const anyQuery = await store.selectOne<{ id: string }>('research_queries', {
+        application_id: app.id,
+      });
+      const queryId = anyQuery?.id ? String(anyQuery.id) : null;
+      for (const f of outcome.findings) {
+        await store.insert('research_findings', {
+          query_id: queryId,
+          application_id: app.id,
+          url: f.url,
+          domain: f.domain,
+          title: f.title,
+          quote: f.quote ?? '',
+          quote_verified: f.quoteVerified,
+          is_primary_source: f.isPrimarySource,
+          confirms: f.confirms,
+          set_aside_reason: f.setAsideReason,
+        });
+      }
+
+      process.stdout.write(
+        `web ${outcome.confirmed.length}/${outcome.findings.length} `,
+      );
+    }
+
     // -- step 3: reconcile ----------------------------------------------------
     const checks = reconcile({
       deckPages: pagesByKind.deck?.normalised ?? [],
@@ -306,6 +384,15 @@ async function main() {
           claims,
           checks,
           founderBackgrounds: redactedBackgrounds, // reaches a model
+          // Only findings that survived the identity and verbatim checks. A page
+          // about a different company of the same name confirms nothing, and
+          // passing it here is how "confirmed externally" becomes a lie.
+          externalConfirmations: confirmedFindings.map((f) => ({
+            domain: f.domain,
+            confirms: f.confirms ?? '',
+            quote: f.quote ?? '',
+            isPrimarySource: f.isPrimarySource,
+          })),
         },
         founders: contacts,
         traceId,

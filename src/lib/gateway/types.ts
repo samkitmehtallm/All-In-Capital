@@ -36,6 +36,11 @@ export interface ModelResponse<T = unknown> {
   traceId: string;
 }
 
+export interface SearchSource {
+  url: string;
+  title: string;
+}
+
 export interface Provider {
   name: string;
   generate(
@@ -43,4 +48,17 @@ export interface Provider {
     req: ModelRequest,
   ): Promise<{ text: string; inputTokens: number; outputTokens: number }>;
   embed(model: string, texts: string[], dim?: number): Promise<number[][]>;
+  /**
+   * Grounded web search. Optional: only the Gemini route has it, and the gateway
+   * returns "nothing found" rather than failing when a provider lacks it.
+   */
+  searchGrounded?(
+    model: string,
+    query: string,
+  ): Promise<{
+    sources: SearchSource[];
+    text: string;
+    inputTokens: number;
+    outputTokens: number;
+  }>;
 }
