@@ -99,23 +99,33 @@ async function describeUnreachableStore(store: Awaited<ReturnType<typeof getStor
   }
 }
 
-export async function getBoard(): Promise<Board> {
-  const store = await getStore();
+function notConnected(reason: string): Board {
+  return {
+    headline: 'Not connected to the database.',
+    subtitle: 'You decide. Once you send the letter, the app books the meeting.',
+    cards: [],
+    scoredCount: 0,
+    bookedThisWeek: [],
+    pending: reason,
+  };
+}
 
-  // A store that cannot be reached is a configuration problem, and the person
-  // reading this screen cannot fix it from here. Say which setting is wrong in
-  // plain words rather than showing an empty board that looks broken.
-  const unreachable = await describeUnreachableStore(store);
-  if (unreachable) {
-    return {
-      headline: 'Not connected to the database.',
-      subtitle: 'You decide. Once you send the letter, the app books the meeting.',
-      cards: [],
-      scoredCount: 0,
-      bookedThisWeek: [],
-      pending: unreachable,
-    };
+export async function getBoard(): Promise<Board> {
+  // getStore() itself throws when DATA_BACKEND=supabase and the service key is
+  // absent, which is the most likely state of a fresh deployment. Catching it
+  // here is what turns that into a screen rather than a stack trace.
+  let store: Awaited<ReturnType<typeof getStore>>;
+  try {
+    store = await getStore();
+  } catch (error) {
+    return notConnected(error instanceof Error ? error.message : String(error));
   }
+
+  // A store that is reachable but unusable is the same class of problem, and the
+  // person reading this screen cannot fix either from here. Say which setting is
+  // wrong in plain words rather than showing an empty board that looks broken.
+  const unreachable = await describeUnreachableStore(store);
+  if (unreachable) return notConnected(unreachable);
 
   const applications = await store.select<{
     id: string;
