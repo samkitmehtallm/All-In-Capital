@@ -159,10 +159,15 @@ export class SupabaseStore implements Store {
       .slice(0, query.limit);
   }
 
-  // -- pgmq -----------------------------------------------------------------
+  // -- queue ----------------------------------------------------------------
+  //
+  // These call the wrappers in `public` from migration 0011, not pgmq directly.
+  // PostgREST will only call functions in a schema it has been told to expose,
+  // and pgmq is not exposed; the alternative was a dashboard toggle that a fresh
+  // project restored from migrations would silently lack.
 
   async enqueue(queue: string, message: Row): Promise<string> {
-    const { data, error } = await this.client.schema('pgmq_public' as never).rpc('send', {
+    const { data, error } = await this.client.rpc('queue_send', {
       queue_name: queue,
       message,
     });
@@ -171,10 +176,13 @@ export class SupabaseStore implements Store {
   }
 
   async dequeue(queue: string, visibilityMs = 60_000): Promise<{ id: string; message: Row } | null> {
-    const { data, error } = await this.client.schema('pgmq_public' as never).rpc('read', {
+    // One message at a time. Reading a batch would put every message in the
+    // batch under the same visibility timeout, so a worker that died on the
+    // first would hold the rest hostage until it expired.
+    const { data, error } = await this.client.rpc('queue_read', {
       queue_name: queue,
-      sleep_seconds: Math.ceil(visibilityMs / 1000),
-      n: 1,
+      vt: Math.ceil(visibilityMs / 1000),
+      qty: 1,
     });
     if (error) throw new Error(`dequeue ${queue}: ${error.message}`);
     const row = Array.isArray(data) ? data[0] : null;
@@ -183,17 +191,16 @@ export class SupabaseStore implements Store {
   }
 
   async ack(queue: string, id: string): Promise<void> {
-    const { error } = await this.client.schema('pgmq_public' as never).rpc('delete', {
+    const { error } = await this.client.rpc('queue_delete', {
       queue_name: queue,
-      message_id: Number(id),
+      msg_id: Number(id),
     });
     if (error) throw new Error(`ack ${queue}: ${error.message}`);
   }
 
   async queueDepth(queue: string): Promise<number> {
-    const { data, error } = await this.client.rpc('pgmq_metrics', { queue_name: queue });
-    if (error) return 0;
-    const row = Array.isArray(data) ? data[0] : data;
-    return Number((row as { queue_length?: number } | null)?.queue_length ?? 0);
+    const { data, error } = await this.client.rpc('queue_depth', { queue_name: queue });
+    if (error) throw new Error(`queue depth ${queue}: ${error.message}`);
+    return Number(Array.isArray(data) ? data[0] : data);
   }
 }

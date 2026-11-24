@@ -234,6 +234,52 @@ currently implies — and a more useful one than a 6-of-12 agreement figure.
 
 ---
 
+## D12. The queue acks a terminal failure, and that is the point
+
+A message is acked in every outcome except one: a failure that has not yet used
+up its two attempts. Those are left alone to become visible again.
+
+The instinct is the reverse — hold the message until the work succeeds, so that
+nothing is ever lost. That instinct is wrong here, and the reason is worth
+writing down. An application stuck in a retry loop is indistinguishable, to the
+person waiting on it, from an application that vanished: it is not on the board,
+nobody has been told to look at it, and the queue behind it is lengthening. So
+the second failure of a step writes a sentence a non-engineer can act on, moves
+the application to "Needs a look", and acks. The work is not finished, but the
+application is accounted for, which is what Case 04 actually asks for.
+
+Three mechanisms carry that, and the order matters:
+
+1. **Idempotency on `applicationId:step`.** A step already `done` is skipped, so
+   re-delivery costs nothing. This is what makes acking early safe at all.
+2. **A visibility timeout, not a lock.** A worker that dies mid-step does not
+   hold the message. A lock would need a liveness check that nobody will write.
+3. **Terminal after two attempts.** A third attempt at a deterministic failure
+   produces the same failure and delays everything behind it.
+
+Two things were found by testing rather than by thinking:
+
+- The 20-call load test failed 20 of 20 with "guard refused" before reaching the
+  network. The run id I had added to defeat the response cache was
+  `Date.now()` — thirteen digits, which is a phone number as far as the send-less
+  guard is concerned. This is the **third** time a long run of digits has tripped
+  it (claim UUIDs were the second). The guard is right every time; the lesson is
+  that identifiers which go into a prompt must not look like phone numbers.
+- The queue could not be reached from the application at all: PostgREST will
+  only call functions in a schema it has been told to expose, and `pgmq` is not
+  one. Supabase's Queues feature adds a `pgmq_public` schema for this, but it is
+  enabled from the dashboard — so a project restored from these migrations alone
+  would have a working queue the application could not touch. Migration 0011 puts
+  four `security definer` wrappers in `public` instead, with execute revoked from
+  `anon` and `authenticated`. The setup step is now in the repository rather than
+  in someone's memory.
+
+Depth counts only messages visible now. A message held by a live visibility
+timeout is in flight, not lost, and counting it as depth would make a healthy
+drain look stuck.
+
+---
+
 ## Appendix: what the ten applications contain
 
 Established by reading the files, before any scoring. Phase 2 reports what the

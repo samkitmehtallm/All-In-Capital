@@ -274,6 +274,8 @@ export interface ClaimLike {
   is_target: boolean;
   quote: string;
   page: number;
+  /** Carried through so the scorer can distinguish "in Oct" from "cumulative". */
+  period?: string | null;
 }
 
 export function deckVsFormChecks(
