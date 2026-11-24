@@ -119,11 +119,28 @@ function countedReplace(
  * Used by the guard, and by the seed loader to assert that every redacted page it
  * writes is actually clean before it reaches the database.
  */
+/**
+ * Mask a matched value for an error message.
+ *
+ * A guard that says only "phone number" sends you hunting through a 20KB prompt;
+ * one that says `phone number ("91…0000", 11 chars)` is actionable in seconds. The
+ * middle is removed so a real leak is not fully reproduced in a log, which is the
+ * whole thing this guard exists to prevent.
+ */
+function mask(value: string): string {
+  const v = value.trim();
+  if (v.length <= 6) return `"${v[0] ?? ''}…", ${v.length} chars`;
+  return `"${v.slice(0, 3)}…${v.slice(-2)}", ${v.length} chars`;
+}
+
 export function findPII(text: string, founders: FounderIdentity[] = []): string[] {
   const found: string[] = [];
-  if (new RegExp(EMAIL_RE.source, 'i').test(text)) found.push('email address');
-  if (new RegExp(LINKEDIN_RE.source, 'i').test(text)) found.push('LinkedIn URL');
-  if (new RegExp(PHONE_RE.source).test(text)) found.push('phone number');
+  const emailMatch = new RegExp(EMAIL_RE.source, 'i').exec(text);
+  if (emailMatch) found.push(`email address (${mask(emailMatch[0])})`);
+  const liMatch = new RegExp(LINKEDIN_RE.source, 'i').exec(text);
+  if (liMatch) found.push(`LinkedIn URL (${mask(liMatch[0])})`);
+  const phoneMatch = new RegExp(PHONE_RE.source).exec(text);
+  if (phoneMatch) found.push(`phone number (${mask(phoneMatch[0])})`);
   for (const f of founders) {
     const bare = f.fullName.replace(/^(?:Dr|Mr|Ms|Mrs|Prof)\.?\s+/i, '');
     if (new RegExp(`\\b${escapeRe(bare)}\\b`, 'i').test(text)) found.push(`founder name (${f.token})`);

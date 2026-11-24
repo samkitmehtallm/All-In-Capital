@@ -164,45 +164,67 @@ interface Reconcilable {
   title: string;
   /** Form labels to read, in order of preference. */
   formLabels: string[];
-  /** Words that identify the matching claim in the deck. */
-  deckMetrics: string[];
+  /** The canonical metric a deck claim must carry to be compared. Exact match. */
+  canonical: string;
+  /**
+   * Which figure to take when the form field states several.
+   *
+   * Pumpwise's Revenue field holds a cumulative figure, a hardware split and a
+   * monthly subscription; only the last is comparable with a monthly deck figure.
+   * Suppressing every multi-figure field removed four false flags but also demoted
+   * a real one (Talkbook's INR 1.9 L against the deck's INR 2.1 L, because the same
+   * field mentions INR 500 per seat). Naming the figure recovers both.
+   */
+  formHint?: RegExp;
   kind: Kind;
   /** Why a mismatch matters, in Riya's terms. */
   question: string;
 }
 
+/**
+ * What is safe to compare across the two documents.
+ *
+ * Each row pairs ONE form field with ONE canonical metric. Nothing is compared on
+ * a keyword, because a keyword match turned "INR 48,000 CAC per team" into a team
+ * of 48,000 and compared payment volume against net revenue.
+ */
 const RECONCILABLE: Reconcilable[] = [
   {
     key: 'paying_customers',
     title: 'Paying customers',
-    formLabels: ['Customers', 'Active customers', 'Users'],
-    deckMetrics: ['paying', 'customers', 'firms', 'teams', 'clients', 'retailers'],
+    formLabels: ['Customers', 'Active customers'],
+    canonical: 'paying_customers',
     kind: 'count',
+    // "11 pilots started since March 2026. 6 converted to paid" -> 6.
+    formHint: /([0-9][0-9,]*)\s*(?:\w+\s+){0,3}?(?:converted to paid|paying|paid)/i,
     question: 'Does the deck count trials or pilots as paying?',
   },
   {
     key: 'team_size',
     title: 'Team size',
     formLabels: ['Team size'],
-    deckMetrics: ['team'],
+    canonical: 'team_size',
     kind: 'count',
     question: 'Does the deck count advisors or contractors as team?',
   },
   {
     key: 'monthly_revenue',
     title: 'Monthly revenue',
-    formLabels: ['Revenue', 'Volume and revenue', 'Revenue / GMV'],
-    deckMetrics: ['recurring revenue', 'mrr', 'monthly revenue', 'revenue'],
+    formLabels: ['Revenue'],
+    canonical: 'monthly_revenue',
     kind: 'amount',
+    // "INR 14.2 L cumulative ... Monthly recurring subscription INR 1.05 L" and
+    // "MRR INR 1.9 L (INR 500 per seat per month)" both resolve correctly.
+    formHint: /(?:monthly recurring|recurring|MRR|monthly)[^0-9]{0,24}((?:INR|₹)?\s*[0-9][0-9,.]*\s*(?:L|lakh|Cr|crore)?)/i,
     question: 'Which month does each figure refer to?',
   },
   {
-    key: 'enterprise_clients',
-    title: 'Clients live',
-    formLabels: ['Customers'],
-    deckMetrics: ['enterprise clients', 'clients live'],
+    key: 'registered_users',
+    title: 'Registered users',
+    formLabels: ['Users'],
+    canonical: 'registered_users',
     kind: 'count',
-    question: 'Are pilots being counted as live?',
+    question: 'Are these the same users on both documents?',
   },
 ];
 
@@ -213,8 +235,31 @@ function readValue(text: string | null | undefined, kind: Kind): number | null {
   return parseCount(text);
 }
 
+/**
+ * How many separate figures does this form field state?
+ *
+ * Form fields are free text and frequently hold several. Pumpwise's Revenue reads
+ * "INR 14.2 L cumulative, of which hardware INR 13.3 L. Monthly recurring
+ * subscription INR 1.05 L" — three figures, of which only the last is monthly.
+ * Taking the first and declaring a contradiction against the deck produced four
+ * false red flags out of seventeen, every one of them on a multi-figure field.
+ *
+ * Where there is more than one, the two documents are not comparable on this metric
+ * by arithmetic alone, and saying so is better than asserting a discrepancy that
+ * does not exist. Riya loses trust in the column far faster from one confident
+ * wrong flag than from an honest "cannot compare".
+ */
+function countFigures(text: string, kind: Kind): number {
+  const pattern =
+    kind === 'percent'
+      ? /[0-9]+(?:\.[0-9]+)?\s*%/g
+      : /[0-9][0-9,]*(?:\.[0-9]+)?/g;
+  return (text.match(pattern) ?? []).length;
+}
+
 export interface ClaimLike {
   metric: string;
+  canonical?: string;
   value_text: string | null;
   value_num: number | null;
   is_target: boolean;
@@ -232,13 +277,51 @@ export function deckVsFormChecks(
   for (const spec of RECONCILABLE) {
     const formRaw = spec.formLabels.map(field).find((v) => v !== null) ?? null;
     const formValue = readValue(formRaw, spec.kind);
-    if (formValue === null) continue;
+    if (formValue === null || formRaw === null) continue;
 
-    // Actuals only. A target is compared by the target check, not this one.
+    // Where the field states several figures, try the hint first.
+    let resolvedForm = formValue;
+    let ambiguous = countFigures(formRaw, spec.kind) > 1;
+
+    if (ambiguous && spec.formHint) {
+      const hinted = spec.formHint.exec(formRaw);
+      const hintedValue = hinted ? readValue(hinted[1], spec.kind) : null;
+      // A hint can land on the wrong number. CareCorner's revenue field says "The
+      // first clinic reached monthly breakeven in month 8", and the monthly hint
+      // matched the 8, producing a reported monthly revenue of eight rupees. A
+      // rupee figure with no unit and a value under a thousand is not revenue, so
+      // the hint is rejected rather than trusted.
+      const plausible =
+        hintedValue !== null &&
+        (spec.kind !== 'amount' || hintedValue >= 1000 || /L|lakh|Cr|crore/i.test(hinted?.[1] ?? ''));
+      if (plausible && hintedValue !== null) {
+        resolvedForm = hintedValue;
+        ambiguous = false;
+      }
+    }
+
+    // Still several figures and no hint matched: not comparable by arithmetic.
+    // Report the ambiguity instead of inventing a contradiction.
+    if (ambiguous) {
+      checks.push({
+        checkKey: `deck_vs_form_${spec.key}`,
+        title: spec.title,
+        severity: 'info',
+        formula: null,
+        expected: null,
+        found: formRaw.length > 90 ? `${formRaw.slice(0, 90)}…` : formRaw,
+        plain:
+          `The form gives more than one figure for ${spec.title.toLowerCase()}, so the deck ` +
+          `cannot be checked against it directly. ${spec.question}`,
+      });
+      continue;
+    }
+
+    // Actuals only, and an exact canonical match. A target is handled separately.
     const candidates = claims.filter(
       (c) =>
         !c.is_target &&
-        spec.deckMetrics.some((m) => c.metric.toLowerCase().includes(m)) &&
+        c.canonical === spec.canonical &&
         readValue(c.value_text ?? String(c.value_num ?? ''), spec.kind) !== null,
     );
     if (candidates.length === 0) continue;
@@ -252,19 +335,19 @@ export function deckVsFormChecks(
     });
     const deckValue = readValue(deckClaim.value_text ?? String(deckClaim.value_num ?? ''), spec.kind)!;
 
-    const agrees = agreesWithinTolerance(deckValue, formValue);
+    const agrees = agreesWithinTolerance(deckValue, resolvedForm);
     const fmt = (n: number) => (spec.kind === 'amount' ? formatINR(n) : String(n));
 
     checks.push({
       checkKey: `deck_vs_form_${spec.key}`,
       title: spec.title,
       severity: agrees ? 'info' : 'red',
-      formula: `deck ${fmt(deckValue)} vs form ${fmt(formValue)} (tolerance 5%)`,
-      expected: fmt(formValue),
+      formula: `deck ${fmt(deckValue)} vs form ${fmt(resolvedForm)} (tolerance 5%)`,
+      expected: fmt(resolvedForm),
       found: fmt(deckValue),
       plain: agrees
         ? `${spec.title} agrees between the deck and the form.`
-        : `The deck says ${fmt(deckValue)} and the form says ${fmt(formValue)}. ${spec.question}`,
+        : `The deck says ${fmt(deckValue)} and the form says ${fmt(resolvedForm)}. ${spec.question}`,
     });
   }
 

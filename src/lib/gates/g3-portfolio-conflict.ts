@@ -78,6 +78,8 @@ export interface PortfolioMatch {
 
 export interface G3Result extends Omit<GateResult, 'gateKey'> {
   gateKey: 'g3_conflict';
+  /** True when the closest match is worth showing but not a conflict. */
+  worthAGlance: boolean;
   matches: PortfolioMatch[];
   /**
    * Portfolio rows with no description, matched on their name alone. The gate's
@@ -155,6 +157,7 @@ export async function evaluateG3(
       reason: 'The portfolio has no company descriptions to compare this against.',
       citations: [],
       decidedBy: 'code',
+      worthAGlance: false,
       matches: [],
       unmatchableCount,
     };
@@ -179,14 +182,20 @@ export async function evaluateG3(
       ]
     : [];
 
-  // Always tripped when there is any plausible neighbour, because a false alarm
-  // beats a miss. Strength changes the wording, not whether Riya sees it.
+  // Only a strong overlap moves the lane.
+  //
+  // The first full run put all ten applications in "Check first" because every one
+  // of them has SOME nearest neighbour above the weak band, and a board with one
+  // lane holding everything is no board at all. "A false alarm beats a missed
+  // conflict" means Riya must SEE the flag, not that every application is routed to
+  // her: the weak band is still reported on the application and still shows the
+  // closest company, it just does not claim a conflict exists.
   const strong = top.z >= STRONG_Z;
   const worthAGlance = top.z >= WEAK_Z;
 
   return {
     gateKey: 'g3_conflict',
-    tripped: worthAGlance,
+    tripped: strong,
     plainName: strong ? `Overlaps ${top.name}` : `Looks close to ${top.name}`,
     reason: strong
       ? `This does much the same thing as ${top.name}, which is already in the portfolio. ` +
@@ -195,6 +204,7 @@ export async function evaluateG3(
         `so this is worth a glance rather than a conflict.`,
     citations,
     decidedBy: 'code',
+    worthAGlance,
     matches,
     unmatchableCount,
   };

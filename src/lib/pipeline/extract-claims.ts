@@ -20,8 +20,39 @@ import { DATA_NOT_INSTRUCTIONS } from '../gateway/guards';
 import { quoteAppearsOnPage } from '../ingest/pdf';
 import type { FounderIdentity } from '../redact';
 
+/**
+ * Controlled vocabulary for what a claim is ABOUT.
+ *
+ * Added after the first full run produced systematic false contradictions: pairing
+ * deck claims to form fields by keyword substring matched Talkbook's "INR 48,000
+ * CAC per team" as a team of 48,000 people, and compared Settlr's INR 86 Cr of
+ * payment VOLUME against its INR 78 L of net REVENUE as though they were the same
+ * figure. Free-text metric names cannot be paired safely; a closed set can.
+ *
+ * `other` is deliberately available so the model is never forced to mislabel.
+ */
+export const CANONICAL_METRICS = [
+  'paying_customers',
+  'trial_or_pilot_customers',
+  'registered_users',
+  'monthly_revenue',
+  'cumulative_revenue',
+  'payment_volume_or_gmv',
+  'team_size',
+  'customer_acquisition_cost',
+  'gross_margin',
+  'repeat_or_retention_rate',
+  'raise_amount',
+  'post_money_valuation',
+  'market_size',
+  'other',
+] as const;
+
+export type CanonicalMetric = (typeof CANONICAL_METRICS)[number];
+
 export const ClaimSchema = z.object({
   metric: z.string().min(1),
+  canonical: z.enum(CANONICAL_METRICS),
   value_text: z.string().nullable(),
   value_num: z.number().nullable(),
   unit: z.enum(['INR', 'pct', 'count', 'months', 'x', 'other']).nullable(),
@@ -46,9 +77,10 @@ export const CLAIMS_JSON_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['metric', 'value_text', 'value_num', 'unit', 'period', 'is_target', 'quote', 'page'],
+        required: ['metric', 'canonical', 'value_text', 'value_num', 'unit', 'period', 'is_target', 'quote', 'page'],
         properties: {
           metric: { type: 'string' },
+          canonical: { type: 'string', enum: [...CANONICAL_METRICS] },
           value_text: { type: ['string', 'null'] },
           value_num: { type: ['number', 'null'] },
           unit: { type: ['string', 'null'], enum: ['INR', 'pct', 'count', 'months', 'x', 'other', null] },
@@ -73,6 +105,16 @@ Rules, in order of importance:
 4. Extract numbers that matter for judging a business: revenue, customers, growth,
    retention and repeat, unit economics, market size, team size, fundraising terms,
    and any figure the document presents as evidence.
+4b. Also classify each claim with "canonical", from the fixed list in the schema.
+   Be precise, because these are compared across documents:
+   - monthly_revenue is revenue IN ONE NAMED MONTH or a monthly recurring figure.
+   - cumulative_revenue is revenue since launch or over several months.
+   - payment_volume_or_gmv is money flowing THROUGH the business, not earned by it.
+   - team_size is a count of PEOPLE. A cost "per team" is customer_acquisition_cost.
+   - paying_customers excludes trials and pilots; those are
+     trial_or_pilot_customers.
+   - A figure from a market-size calculation is market_size, never a customer count.
+   Use "other" rather than forcing a bad fit.
 5. If a figure appears with no number you can read, still record it with value_num
    null and the quote. A missing number is information.
 6. Do not infer, combine or compute anything. Report only what the page says.

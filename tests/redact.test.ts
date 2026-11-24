@@ -80,8 +80,11 @@ describe('redact', () => {
 
 describe('findPII', () => {
   it('finds what redaction would have removed', () => {
-    assert.deepEqual(findPII('rohit@earnwise.example'), ['email address']);
-    assert.deepEqual(findPII('linkedin.com/in/x'), ['LinkedIn URL']);
+    // The message now names what matched, masked, so a false positive is
+    // diagnosable without hunting through a 20KB prompt.
+    assert.match(findPII('rohit@earnwise.example')[0], /^email address \("roh…le", 22 chars\)$/);
+    assert.match(findPII('linkedin.com/in/x')[0], /^LinkedIn URL \(/);
+    assert.doesNotMatch(findPII('rohit@earnwise.example')[0], /rohit@earnwise/);
     assert.ok(findPII('Rohit Arora', earnwise).includes('founder name (F1)'));
   });
 
