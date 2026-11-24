@@ -27,9 +27,15 @@ function resolveCredentials(): { url: string; serviceKey: string } {
     : process.env.SUPABASE_SERVICE_KEY;
 
   if (!url || !serviceKey) {
+    // Name only what is actually missing. Listing both when one is already set
+    // sends whoever reads this screen looking for a problem that is not there,
+    // and the fund has no engineer to work that out.
+    const urlVar = isTest ? 'SUPABASE_TEST_URL' : 'SUPABASE_URL';
+    const keyVar = isTest ? 'SUPABASE_TEST_SERVICE_KEY' : 'SUPABASE_SERVICE_KEY';
+    const missing = [!url ? urlVar : null, !serviceKey ? keyVar : null].filter(Boolean);
     throw new Error(
-      `Missing ${isTest ? 'SUPABASE_TEST_URL / SUPABASE_TEST_SERVICE_KEY' : 'SUPABASE_URL / SUPABASE_SERVICE_KEY'}. ` +
-        'Test and live use separate databases.',
+      `${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} not set. ` +
+        'Add it in the project settings and redeploy.',
     );
   }
 
