@@ -22,6 +22,11 @@ export const RATES_VERIFIED_ON = '2026-11-24';
 
 export const RATES: Record<string, ModelRate> = {
   'gemini-2.5-flash': { inputPerM: 0.3, outputPerM: 2.5 },
+  // OpenRouter namespaces model ids. Rates confirmed against its live /models
+  // catalogue on the date below, and they match Google's list price.
+  'google/gemini-2.5-flash': { inputPerM: 0.3, outputPerM: 2.5 },
+  'google/gemini-2.5-flash-lite': { inputPerM: 0.1, outputPerM: 0.4 },
+  'google/gemini-2.5-pro': { inputPerM: 1.25, outputPerM: 10.0 },
   'gemini-2.5-flash-lite': { inputPerM: 0.1, outputPerM: 0.4 },
   'gemini-2.5-pro': { inputPerM: 1.25, outputPerM: 10.0 },
   'gemini-2.0-flash': { inputPerM: 0.1, outputPerM: 0.4 },

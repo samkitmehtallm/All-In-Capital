@@ -49,8 +49,25 @@ These are enforced by tests, not by convention.
 ## Stack
 
 Next.js 15 (App Router), React 19, TypeScript, Tailwind 4. Postgres on Supabase with
-row-level security, `pgvector` for retrieval and `pgmq` for the queue. Google Gemini
-through a gateway module. Node's built-in test runner via `tsx`.
+row-level security, `pgvector` for retrieval and `pgmq` for the queue. Node's built-in
+test runner via `tsx`.
+
+Model calls take two routes, both through the one gateway module:
+
+- **Local** — the open-source [Portkey gateway](https://github.com/Portkey-AI/gateway)
+  on `:8787`, started with `pnpm gateway`, with automatic retries configured on it.
+- **Production** — OpenRouter directly, `google/gemini-2.5-flash` primary and
+  `google/gemini-2.5-flash-lite` as the fallback.
+
+`pnpm live-check [openrouter|portkey|offline]` proves which route is live, what it
+costs and how long it took.
+
+**OpenRouter has no embedding endpoint.** Retrieval — memo passages, the G3 portfolio
+conflict check, style examples, remembered corrections — therefore needs a separate
+vector source. With `GEMINI_API_KEY` set it uses `gemini-embedding-001`; without it,
+deterministic stand-in vectors that are reproducible but *not semantic*, which
+`live-check` and the seed script both say out loud rather than letting the conflict
+check appear to work.
 
 ## Getting started
 
