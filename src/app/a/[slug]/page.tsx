@@ -2,7 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { DecisionPanel } from '../../../components/decision-panel';
-import { getApplication, type AreaRow, type CheckRow } from '../../../lib/application';
+import { SourceLink } from '../../../components/source-drawer';
+import {
+  getApplication,
+  type AreaRow,
+  type CheckRow,
+  type ClaimRow,
+} from '../../../lib/application';
 
 /*
  * Application screen — built for a thirty-second decision.
@@ -145,8 +151,9 @@ export default async function ApplicationPage({ params }: { params: Promise<{ sl
             <div className="space-y-6 border-t border-[var(--color-hairline)] p-4">
               <AreaTable areas={app.areas} />
               <CallQuestions areas={app.areas} />
-              <ChecksTable checks={app.checks} />
+              <ChecksTable checks={app.checks} slug={app.slug} />
               <Founders founders={app.founders} />
+              <Evidence claims={app.claims} slug={app.slug} />
             </div>
           </details>
         </div>
@@ -321,7 +328,7 @@ function CallQuestions({ areas }: { areas: AreaRow[] }) {
   );
 }
 
-function ChecksTable({ checks }: { checks: CheckRow[] }) {
+function ChecksTable({ checks, slug }: { checks: CheckRow[]; slug: string }) {
   if (checks.length === 0) return null;
   const red = checks.filter((c) => c.severity === 'red');
   const rest = checks.filter((c) => c.severity !== 'red');
@@ -345,6 +352,16 @@ function ChecksTable({ checks }: { checks: CheckRow[] }) {
                 </span>
                 {check.formula ? (
                   <code className="num text-[11.5px] text-[var(--color-muted)]">{check.formula}</code>
+                ) : null}
+                {check.pageNumber && check.documentKind ? (
+                  <SourceLink
+                    source={{
+                      slug,
+                      kind: check.documentKind,
+                      page: check.pageNumber,
+                      quote: check.quote ?? '',
+                    }}
+                  />
                 ) : null}
               </div>
               <p className="mt-1 text-[13px] leading-relaxed">{check.plain}</p>
@@ -370,6 +387,38 @@ function ChecksTable({ checks }: { checks: CheckRow[] }) {
           ))}
         </ul>
       ) : null}
+    </section>
+  );
+}
+
+/**
+ * The evidence, each row openable at the page it came from.
+ *
+ * This is the only place a page number appears, and it appears inside the drawer
+ * rather than on the row: the brief forbids source codes on screen, so the link
+ * says "Source" and the provenance lives one click away.
+ */
+function Evidence({ claims, slug }: { claims: ClaimRow[]; slug: string }) {
+  if (claims.length === 0) return null;
+  return (
+    <section>
+      <h3 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--color-subtle)]">
+        What the application says
+      </h3>
+      <ul className="mt-2.5 divide-y divide-[var(--color-hairline)]">
+        {claims.map((claim, i) => (
+          <li key={`${claim.kind}-${claim.page}-${i}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-2">
+            <span className="text-[13px] font-medium">{claim.metric}</span>
+            <span className="num text-[13px] text-[var(--color-muted)]">
+              {claim.valueText ?? 'no number given'}
+            </span>
+            {claim.period ? (
+              <span className="text-[11.5px] text-[var(--color-subtle)]">{claim.period}</span>
+            ) : null}
+            <SourceLink source={{ slug, kind: claim.kind, page: claim.page, quote: claim.quote }} />
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

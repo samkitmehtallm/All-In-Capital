@@ -213,6 +213,8 @@ async function main() {
           expected: c.expected,
           found: c.found,
           plain: c.plain,
+          page_number: c.pageNumber ?? null,
+          document_kind: c.documentKind ?? null,
         },
         ['application_id', 'check_key'],
       );

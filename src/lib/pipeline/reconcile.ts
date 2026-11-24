@@ -30,6 +30,11 @@ export interface ReconCheck {
   found: string | null;
   /** One sentence, plain words, phrased as a question where it is a discrepancy. */
   plain: string;
+  /** The page a reader should be taken to, where the check has a single one. */
+  pageNumber?: number;
+  documentKind?: 'deck' | 'form';
+  /** Text to highlight on that page. */
+  quote?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,6 +119,7 @@ function underivedMarketCheck(deckPages: string[]): ReconCheck[] {
       formula: null,
       expected: 'the inputs the figure came from',
       found: `${biggest.text} stated with no derivation`,
+      quote: biggest.text,
       plain:
         'The market figure is stated without the inputs behind it, so there is nothing ' +
         'to check it against. Worth asking how they got to it.',
@@ -133,6 +139,9 @@ export function marketChecks(deckPages: string[]): ReconCheck[] {
       checks.push({
         checkKey: `market_${tier.toLowerCase()}`,
         title: `${tier} on page ${i + 1}`,
+        pageNumber: i + 1,
+        documentKind: 'deck',
+        quote: result.claimedText,
         severity: result.severity === 'ok' ? 'info' : result.severity,
         formula: result.formula,
         expected: result.computedInr === null ? null : formatINR(result.computedInr),

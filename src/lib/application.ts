@@ -43,6 +43,20 @@ export interface CheckRow {
   expected: string | null;
   found: string | null;
   plain: string;
+  /** Present where the check points at one page a reader can open. */
+  pageNumber: number | null;
+  documentKind: 'deck' | 'form' | null;
+  quote: string | null;
+}
+
+export interface ClaimRow {
+  metric: string;
+  valueText: string | null;
+  period: string | null;
+  quote: string;
+  page: number;
+  kind: 'deck' | 'form';
+  isTarget: boolean;
 }
 
 export interface FounderRow {
@@ -89,6 +103,8 @@ export interface ApplicationView {
   checks: CheckRow[];
   founders: FounderRow[];
   claimCount: number;
+  /** The evidence itself, each row openable in the source drawer. */
+  claims: ClaimRow[];
 }
 
 const RECOMMENDATION_WORDS: Record<string, string> = {
@@ -166,9 +182,9 @@ export async function getApplication(slug: string): Promise<ApplicationView | nu
   }>('applications', { slug });
   if (!app) return null;
 
-  const [documents, founderRows, scoreRows, gateRows, checkRows, assessment, claimCount] =
+  const [documents, founderRows, scoreRows, gateRows, checkRows, assessment, claimCount, claimRows] =
     await Promise.all([
-      store.select<{ kind: string; page_count: number }>('documents', { application_id: app.id }),
+      store.select<{ id: string; kind: string; page_count: number }>('documents', { application_id: app.id }),
       store.select<{ token: string; role: string | null; background_form: string }>('founders', {
         application_id: app.id,
       }),
@@ -197,6 +213,8 @@ export async function getApplication(slug: string): Promise<ApplicationView | nu
         expected: string | null;
         found: string | null;
         plain: string;
+        page_number: number | null;
+        document_kind: string | null;
       }>('recon_checks', { application_id: app.id }),
       store.selectOne<{
         rating_word: string;
@@ -206,6 +224,7 @@ export async function getApplication(slug: string): Promise<ApplicationView | nu
         reminds_us_of: string | null;
       }>('assessments', { application_id: app.id }),
       store.count('claims', { application_id: app.id }),
+      store.select<{ metric: string; value_text: string | null; period: string | null; quote: string; page_number: number; document_id: string; is_target: boolean }>('claims', { application_id: app.id }),
     ]);
 
   // Areas in rubric order, not database order, so the table reads the same way
@@ -331,6 +350,9 @@ export async function getApplication(slug: string): Promise<ApplicationView | nu
         expected: c.expected,
         found: c.found,
         plain: c.plain,
+        pageNumber: c.page_number ?? null,
+        documentKind: (c.document_kind as 'deck' | 'form' | null) ?? null,
+        quote: c.found,
       }))
       .sort((a, b) => {
         const order = { red: 0, warn: 1, info: 2 };
@@ -340,6 +362,20 @@ export async function getApplication(slug: string): Promise<ApplicationView | nu
       .sort((a, b) => a.token.localeCompare(b.token))
       .map((f) => ({ token: f.token, role: f.role, background: f.background_form })),
     claimCount,
+    // Actuals only, newest pages last, so the evidence list reads in document
+    // order rather than whatever order the extractor happened to emit.
+    claims: claimRows
+      .filter((c) => !c.is_target)
+      .map((c) => ({
+        metric: c.metric,
+        valueText: c.value_text,
+        period: c.period,
+        quote: c.quote,
+        page: c.page_number,
+        kind: (documents.find((d) => d.id === c.document_id)?.kind as 'deck' | 'form') ?? 'deck',
+        isTarget: Boolean(c.is_target),
+      }))
+      .sort((a, b) => (a.kind === b.kind ? a.page - b.page : a.kind === 'deck' ? -1 : 1)),
   };
 }
 

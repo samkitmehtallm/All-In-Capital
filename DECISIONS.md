@@ -172,9 +172,62 @@ asks for, not what it is willing to accept.
 |---|---|---|
 | Does the arithmetic hold? | Unit tests over every market slide in all ten decks | Any deck whose correct figures are flagged, or whose wrong ones are not |
 | Does it leak? | `findPII` asserted on all 116 redacted pages at seed time; guard tests | One leak is a stop |
-| Does it agree with the fund? | Blind calibration over the twelve memos (phase 5) | Below 8 of 12 agreement, or the backed company failing to outscore its paired pass |
+| Does it agree with the fund? | Blind calibration over the twelve memos | Below 8 of 12 agreement, or the backed company failing to outscore its paired pass |
 | Does scheduling ever double-book? | Fixture tests: free, busy, out of hours, unclear, and two runs at once | One double-booking is a stop |
 | Does it earn its place? | Cost per application from `llm_calls`; payback against ₹1,000/hour of Riya's time | Payback over 12 months |
+
+---
+
+## D11. The kill threshold fired, and the thresholds are what is wrong
+
+**Result.** Blind calibration over the twelve memos scored **6 of 12 agreement** —
+below the 8 of 12 kill threshold set above, which I am recording as fired rather
+than quietly moving.
+
+**But the agreement figure is not the finding.** The system passed on all twelve.
+Every agreement is an agreement with a pass; every disagreement is a company the
+fund backed. A classifier that always answers "pass" scores 6 of 12 on a pack that
+is half investments, so the headline measures nothing.
+
+**What the run actually shows is better than that.** Ranking agreement is **6 of 6**:
+in every teaching pair, the company the fund backed outscored the company it
+passed.
+
+| Pair | Backed | Passed |
+|---|---|---|
+| consumer brand, on cohort repeat | Giva 5.30 | Petalry 2.07 |
+| lending, on who owns the risk | Jai Kisan 5.14 | CampusCredit 1.86 |
+| deeptech, on a milestone path | ePlane 5.69 | AeroDrop 2.26 |
+| fintech, on regulatory dependence | Wint Wealth 5.45 | Coinlane 2.75 |
+| commerce, on structure at pre-seed | SuperK 4.15 | HopBox 3.80 |
+| defensibility beyond one person | Unbox Robotics 5.83 | Prepnest 2.45 |
+
+So the rubric has captured the distinctions the partners draw. **The scale is
+miscalibrated, not the judgement.** Nothing clears 5.83 against a "dig first"
+threshold of 6.0 and a "take the call" threshold of 7.5.
+
+**Most likely cause, in order.** A memo's "Risks and open questions" section is
+adversarial by construction and drags every criterion down. Criteria the memos
+barely discuss (pre-seed fit, numbers fluency) score the mandated 2 for missing
+evidence, which is correct per R4 but compounds across six weighted criteria. And
+the citation rule is inert on this path, so none of the usual upward pressure from
+cited evidence applies.
+
+**What I am NOT doing.** Lowering the thresholds until this passes. The thresholds
+came from the brief, they govern live applications as well as this backtest, and
+tuning them against the same twelve memos the rubric was built from would be fitting
+noise twice over and calling it validation.
+
+**What should happen instead**, in order of preference:
+1. Score the ten live applications and the twelve memos on the same scale, then set
+   thresholds from the combined distribution rather than from either alone.
+2. Hold out three memos from the rubric reconstruction and re-derive, so there is
+   at least a small out-of-sample check.
+3. Only then move the thresholds, and record the move as a new rubric version.
+
+**Open until that is done.** On the current numbers this system can rank
+applications and cannot decide them, which is a narrower claim than the board
+currently implies — and a more useful one than a 6-of-12 agreement figure.
 
 ---
 
