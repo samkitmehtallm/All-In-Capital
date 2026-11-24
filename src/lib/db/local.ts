@@ -37,8 +37,20 @@ export class LocalStore implements Store {
 
   constructor(dir = process.env.LOCAL_DATA_DIR ?? '.data') {
     this.dir = dir;
-    mkdirSync(this.dir, { recursive: true });
+    try {
+      mkdirSync(this.dir, { recursive: true });
+      this.writable = true;
+    } catch {
+      // A serverless filesystem is read-only. Throwing here would turn a
+      // misconfiguration (local backend in production) into a 500 on every
+      // request, with the real cause buried in a build log. Record it instead
+      // and let the screen say what is wrong.
+      this.writable = false;
+    }
   }
+
+  /** False when the data directory could not be created, e.g. on Vercel. */
+  readonly writable: boolean = false;
 
   private path(table: string): string {
     return join(this.dir, `${table}.json`);
@@ -55,6 +67,7 @@ export class LocalStore implements Store {
 
   private write(table: string, rows: Row[]): void {
     this.cache.set(table, rows);
+    if (!this.writable) return; // in-memory only; see the constructor
     writeFileSync(this.path(table), JSON.stringify(rows, null, 2));
   }
 

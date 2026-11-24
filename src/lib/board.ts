@@ -76,8 +76,46 @@ function startOfIstWeek(now = new Date()): Date {
   return new Date(monday - 5.5 * 3600 * 1000);
 }
 
+/**
+ * Is the configured store actually usable?
+ *
+ * Returns a sentence for the screen, or null when all is well.
+ */
+async function describeUnreachableStore(store: Awaited<ReturnType<typeof getStore>>): Promise<string | null> {
+  if (store.kind === 'local' && (store as { writable?: boolean }).writable === false) {
+    return (
+      'This deployment is set to the local file store, which cannot be written to on ' +
+      'a serverless host. Set DATA_BACKEND to supabase and add SUPABASE_URL and ' +
+      'SUPABASE_SERVICE_KEY, then redeploy.'
+    );
+  }
+
+  try {
+    await store.count('applications');
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `The database could not be reached: ${message}`;
+  }
+}
+
 export async function getBoard(): Promise<Board> {
   const store = await getStore();
+
+  // A store that cannot be reached is a configuration problem, and the person
+  // reading this screen cannot fix it from here. Say which setting is wrong in
+  // plain words rather than showing an empty board that looks broken.
+  const unreachable = await describeUnreachableStore(store);
+  if (unreachable) {
+    return {
+      headline: 'Not connected to the database.',
+      subtitle: 'You decide. Once you send the letter, the app books the meeting.',
+      cards: [],
+      scoredCount: 0,
+      bookedThisWeek: [],
+      pending: unreachable,
+    };
+  }
 
   const applications = await store.select<{
     id: string;
