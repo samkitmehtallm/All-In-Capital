@@ -89,6 +89,9 @@ export function parseAmountOrThrow(input: string): ParsedAmount {
 export function formatINR(inr: number): string {
   if (!Number.isFinite(inr)) return '—';
   const abs = Math.abs(inr);
+  // Above a lakh crore, "₹1,14,000 Cr" is harder to read than "₹1.14 lakh Cr",
+  // and the decks themselves switch at exactly this point.
+  if (abs >= LAKH * CRORE) return `₹${trimZeros(inr / (LAKH * CRORE))} lakh Cr`;
   if (abs >= CRORE) return `₹${trimZeros(inr / CRORE)} Cr`;
   if (abs >= LAKH) return `₹${trimZeros(inr / LAKH)} L`;
   return `₹${Math.round(inr).toLocaleString('en-IN')}`;
