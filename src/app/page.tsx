@@ -18,6 +18,7 @@ export default async function BoardPage() {
     <div className="space-y-6">
       <section className="space-y-2">
         <h1 className="text-[22px] leading-tight sm:text-[26px]">{board.headline}</h1>
+        <p className="text-[14px] text-[var(--color-muted)]">{board.subtitle}</p>
         {board.pending ? (
           <p className="max-w-[62ch] text-[14px] leading-relaxed text-[var(--color-muted)]">
             {board.pending}
@@ -55,6 +56,44 @@ export default async function BoardPage() {
         </div>
       </section>
 
+      {/*
+        The fifth strip. Scheduling runs on its own after Riya's one click, so the
+        only honest way to ship that is to show her exactly what it did.
+      */}
+      <section aria-labelledby="booked" className="space-y-3 pt-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="booked" className="text-[13.5px] font-semibold">
+            Meetings booked this week
+          </h2>
+          <span className="num text-[12px] text-[var(--color-subtle)]">
+            {board.bookedThisWeek.length}
+          </span>
+        </div>
+        {board.bookedThisWeek.length === 0 ? (
+          <p className="rounded-[12px] border border-dashed border-[var(--color-hairline)] px-3 py-5 text-[12.5px] leading-relaxed text-[var(--color-subtle)]">
+            Nothing booked yet. After you send a letter, the app offers your two free
+            times, reads the reply, and books the call.
+          </p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {board.bookedThisWeek.map((meeting) => (
+              <li
+                key={`${meeting.slug}-${meeting.startsAt}`}
+                className="card flex items-baseline gap-2.5 px-3 py-2 text-[13px]"
+              >
+                <span className="font-medium">{meeting.company}</span>
+                <span className="num text-[12px] text-[var(--color-muted)]">
+                  {formatSlot(meeting.startsAt)}
+                </span>
+                {meeting.adityaInvited ? (
+                  <span className="text-[11.5px] text-[var(--color-subtle)]">Aditya joining</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {unplaced.length > 0 ? (
         <section aria-labelledby="being-read" className="space-y-3 pt-2">
           <div className="flex items-baseline justify-between gap-3">
@@ -72,6 +111,19 @@ export default async function BoardPage() {
       ) : null}
     </div>
   );
+}
+
+/** "Thu 26 Nov, 3:00 pm" — IST, because that is the only timezone anyone here uses. */
+function formatSlot(iso: string): string {
+  return new Intl.DateTimeFormat('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  }).format(new Date(iso));
 }
 
 function Card({ card }: { card: BoardCard }) {

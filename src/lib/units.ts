@@ -39,8 +39,8 @@ const MULTIPLIER_WORDS: Array<{ re: RegExp; value: number; canonical: string }> 
  * Parse one Indian money amount out of a string.
  *
  * Returns null rather than guessing when there is no number, so an unreadable
- * amount can be routed to Kushal with the text it could not read (gate G1)
- * instead of silently becoming zero.
+ * amount is flagged with the text it could not read (gate G1) instead of
+ * silently becoming zero.
  */
 export function parseAmount(input: string | null | undefined): ParsedAmount | null {
   if (!input) return null;

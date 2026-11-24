@@ -297,11 +297,26 @@ export const FUND_RULES = {
   sectorsInThesis: ['fintech', 'deeptech', 'consumer tech', 'consumer brand'],
   sectorsStretch: ['b2b saas', 'commerce infrastructure', 'rural credit'],
   sectorsOutside: ['healthcare', 'web3', 'crypto', 'real estate'],
-  /** Meeting 5: Tuesday or Thursday afternoons IST, 30 minutes. */
-  callDays: [2, 4] as number[],
+  /**
+   * Scheduling has two different rules, and conflating them books the wrong calls.
+   *
+   * What the tool OFFERS is Tuesday or Thursday afternoons, which is what the
+   * partners agreed in Meeting 5. What the tool ACCEPTS when a founder proposes
+   * their own time is wider: any weekday between 10:00 and 19:00 IST. Refusing a
+   * founder's Wednesday morning because of an internal preference would be the tool
+   * creating the back-and-forth it exists to remove.
+   */
+  offerDays: [2, 4] as number[],
+  offerAfternoonFromHour: 13,
+  acceptWeekdays: [1, 2, 3, 4, 5] as number[],
+  acceptFromHour: 10,
+  acceptUntilHour: 19,
+  acceptWithinDays: 30,
   callDurationMinutes: 30,
-  /** Meeting 3: Aditya joins deeptech calls. */
+  /** Meeting 3: Aditya leads deeptech and is added to those calls. */
   adityaJoinsSectors: ['deeptech'],
+  /** Follow-up is prepared, never sent, after this many working days of silence. */
+  followUpAfterWorkingDays: 3,
   /** Meeting 4: "I would rather get a flag on a false alarm than miss a real conflict." */
   conflictFlagAlways: true,
 } as const;

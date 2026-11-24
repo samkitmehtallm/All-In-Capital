@@ -4,7 +4,13 @@ An internal tool for a pre-seed venture fund in India. It reads each founder
 application, checks the numbers, researches the founders, applies the fund's rules,
 scores it against the thesis, ranks it into lanes, and drafts the first email.
 
-**Nothing is advanced, rejected or sent automatically.** A human clicks every send.
+Riya, the fund's associate, decides: Advance, Hold or Pass, with an optional note.
+**Nothing is advanced or rejected automatically, and she clicks the first send.**
+After that one click the tool books the meeting on its own — it offers two free times
+from her calendar, reads the reply, and books the call. It may send only two kinds of
+message by itself, both in the same thread: a booking confirmation for a time she is
+free for, and an offer of two new times when the founder's suggestion clashes.
+Anything it cannot read waits for her.
 
 Built for MESA PGP Cohort 4, Term 2 (Cases 3, 4 and 5).
 
@@ -36,7 +42,7 @@ These are enforced by tests, not by convention.
 | Founder names, emails, phones and LinkedIn URLs never reach a model | `assertSendLess` **throws**; asserted again on all 116 pages at seed time |
 | Every system prompt ends with the data-not-instructions sentence | `assertDataGuard` throws if a step forgets it |
 | One module may call a model | `tests/gateway-is-the-only-caller.test.ts` walks `src/` and fails if anything else imports a provider SDK |
-| A tripped rule routes to the partner, never auto-rejects | Gates set the lane to "Kushal decides" |
+| A tripped rule flags, never auto-rejects | Gates set the lane to "Check first"; Riya still decides |
 | A missing number lowers the score; it is never skipped | Scores 2 with low confidence, and the gap is named |
 | Keys only in environment variables | `.env.local`, git-ignored; the browser never talks to the database |
 

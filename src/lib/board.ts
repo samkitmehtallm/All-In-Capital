@@ -14,11 +14,11 @@ import { getStore } from './db/index';
 import { evaluateG1, type GateResult } from './gates/g1-stage-cheque';
 import { formatINR } from './units';
 
-export type Lane = 'worth_a_call' | 'kushal_decides' | 'dig_first' | 'not_now';
+export type Lane = 'worth_a_call' | 'check_first' | 'dig_first' | 'not_now';
 
 export const LANES: Array<{ key: Lane; label: string; hint: string }> = [
   { key: 'worth_a_call', label: 'Worth a call', hint: 'Scored 7.5 or above with no gate tripped' },
-  { key: 'kushal_decides', label: 'Kushal decides', hint: 'A gate tripped. Never auto-rejected' },
+  { key: 'check_first', label: 'Check first', hint: 'A rule tripped. You still decide' },
   { key: 'dig_first', label: 'Dig first', hint: 'Scored 6.0 to 7.49, with questions to ask' },
   { key: 'not_now', label: 'Not now', hint: 'Below 6.0, with what would change our view' },
 ];
@@ -44,12 +44,36 @@ export interface BoardCard {
   state: 'read' | 'scored';
 }
 
+export interface BookedMeeting {
+  company: string;
+  slug: string;
+  startsAt: string;
+  adityaInvited: boolean;
+}
+
 export interface Board {
   headline: string;
+  /** Fixed, because it is the one thing Riya needs to know about how this works. */
+  subtitle: string;
   cards: BoardCard[];
   scoredCount: number;
+  /** The fifth strip: what the tool booked without her, so it is never a surprise. */
+  bookedThisWeek: BookedMeeting[];
   /** What this screen cannot show yet, said plainly rather than left blank. */
   pending: string | null;
+}
+
+/**
+ * Monday 00:00 of the current week, in IST.
+ *
+ * "This week" has to mean the same thing to Riya as it does to the query, and she
+ * is in Delhi, so the boundary is computed in IST rather than from the host clock.
+ */
+function startOfIstWeek(now = new Date()): Date {
+  const ist = new Date(now.getTime() + 5.5 * 3600 * 1000);
+  const day = (ist.getUTCDay() + 6) % 7; // Monday = 0
+  const monday = Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate() - day);
+  return new Date(monday - 5.5 * 3600 * 1000);
 }
 
 export async function getBoard(): Promise<Board> {
@@ -93,8 +117,9 @@ export async function getBoard(): Promise<Board> {
       headline: string;
     }>('assessments', { application_id: app.id });
 
-    // A tripped gate puts it in front of Kushal even before anything is scored.
-    const lane: Lane | null = assessment?.lane ?? (g1.tripped ? 'kushal_decides' : null);
+    // A tripped rule puts it in the Check first lane even before anything is scored.
+    // Riya still decides; the lane only changes the order she reads things in.
+    const lane: Lane | null = assessment?.lane ?? (g1.tripped ? 'check_first' : null);
 
     cards.push({
       slug: app.slug,
@@ -121,10 +146,33 @@ export async function getBoard(): Promise<Board> {
   const scoredCount = cards.filter((c) => c.state === 'scored').length;
   const gated = cards.filter((c) => c.gates.length > 0);
 
+  // Meetings the tool booked on its own. Riya clicked send on the first letter and
+  // nothing else, so this strip is how she finds out what happened next.
+  const weekStart = startOfIstWeek();
+  const events = await store.select<{
+    application_id: string;
+    starts_at: string;
+    aditya_invited: boolean;
+  }>('calendar_events');
+  const bookedThisWeek: BookedMeeting[] = events
+    .filter((e) => new Date(e.starts_at).getTime() >= weekStart.getTime())
+    .map((e) => {
+      const app = applications.find((a) => a.id === e.application_id);
+      return {
+        company: app?.company_name ?? 'Unknown',
+        slug: app?.slug ?? '',
+        startsAt: e.starts_at,
+        adityaInvited: Boolean(e.aditya_invited),
+      };
+    })
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+
   return {
     headline: buildHeadline(cards.length, scoredCount, gated.length),
+    subtitle: 'You decide. Once you send the letter, the app books the meeting.',
     cards,
     scoredCount,
+    bookedThisWeek,
     pending:
       scoredCount === 0
         ? 'Scoring has not run yet. Each application has been read and checked against the ' +
@@ -137,7 +185,7 @@ export async function getBoard(): Promise<Board> {
 /**
  * The one-line headline, in plain words.
  *
- * "Two worth a call; three need Kushal." is the target shape. Before scoring there
+ * "Two worth a call; three to check first." is the target shape. Before scoring there
  * is nothing to count, so it says what is actually true instead.
  */
 function buildHeadline(total: number, scored: number, gated: number): string {
@@ -145,13 +193,13 @@ function buildHeadline(total: number, scored: number, gated: number): string {
   if (scored === 0) {
     const gatePart =
       gated === 1
-        ? 'One already needs Kushal'
+        ? 'One to check first'
         : gated > 1
-          ? `${spell(gated)} already need Kushal`
-          : 'None has tripped a rule yet';
+          ? `${spell(gated)} to check first`
+          : 'None has tripped a rule';
     return `${spell(total)} applications read. ${gatePart}.`;
   }
-  return `${spell(scored)} of ${spell(total)} scored; ${spell(gated)} need Kushal.`;
+  return `${spell(scored)} of ${spell(total)} scored; ${spell(gated)} to check first.`;
 }
 
 function spell(n: number): string {

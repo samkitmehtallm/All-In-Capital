@@ -6,9 +6,9 @@
  * parsed from a form field, and a model asked to do them would occasionally get one
  * wrong in a way nobody could reproduce.
  *
- * A tripped gate sets the lane to "Kushal decides". It never rejects: Kushal sees
- * every outcome before anything is decided, and nothing is auto-rejected or
- * auto-advanced (operating facts).
+ * A tripped rule sets the lane to "Check first" and nothing else. It never rejects
+ * and never advances: Riya decides, and the lane only changes the order she reads
+ * things in. The reason is written in one line so she can act on it in seconds.
  *
  * An amount that could not be read is itself a trip, carrying the text it could not
  * read. Treating an unreadable raise as zero would place it inside the range.

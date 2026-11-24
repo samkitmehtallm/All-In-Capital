@@ -125,6 +125,47 @@ no path to it from any client-side credential.
 
 ---
 
+## D9. Riya decides, and the correction is her decision
+
+**Decision.** No per-criterion override buttons anywhere. The `decisions` table holds
+Advance / Hold / Pass with an **optional** note, recordable by any signed-in team
+member, and a `corrections` row is written only when the decision goes against the
+recommendation.
+
+**Chosen over.** The per-score override loop built in phase 1, where a partner
+overrode one criterion with a new score and a required one-line reason.
+
+**Why.** The revised brief makes Riya the decision maker rather than an assistant to
+the partners, and is explicit that she has no time to correct six scores one at a
+time. A required reason makes it likelier she records nothing at all. Her
+disagreement with the recommendation carries most of the same signal and costs her
+one click, so that is what gets embedded and shown to the scorer next time.
+
+**Wrong if.** Decision-level corrections turn out too coarse to move any individual
+criterion — a Pass on a "Worth a call" says the verdict was wrong without saying
+which of the six was wrong. Calibration will show whether that signal is usable; if
+it is not, the answer is a better-targeted question at decision time, not a return to
+six override buttons.
+
+**Cost already paid.** The phase 1 `corrections` and `partner_decisions` tables were
+dropped in migration 0007 rather than left alongside the new ones, because two tables
+both meaning "the decision" is how a screen ends up showing the wrong one.
+
+---
+
+## D10. Offered times and accepted times follow different rules
+
+**Decision.** The tool **offers** Tuesday or Thursday afternoons, as the partners
+agreed in Meeting 5. It **accepts** a founder-proposed time on any weekday between
+10:00 and 19:00 IST, within 30 days.
+
+**Why.** Conflating the two would make the tool refuse a founder's Wednesday morning
+because of an internal scheduling preference — creating exactly the calendar
+back-and-forth it exists to remove. The partners' preference governs what the fund
+asks for, not what it is willing to accept.
+
+---
+
 ## What is measured, and what would kill it
 
 | Question | Measure | Kill threshold |
@@ -132,6 +173,7 @@ no path to it from any client-side credential.
 | Does the arithmetic hold? | Unit tests over every market slide in all ten decks | Any deck whose correct figures are flagged, or whose wrong ones are not |
 | Does it leak? | `findPII` asserted on all 116 redacted pages at seed time; guard tests | One leak is a stop |
 | Does it agree with the fund? | Blind calibration over the twelve memos (phase 5) | Below 8 of 12 agreement, or the backed company failing to outscore its paired pass |
+| Does scheduling ever double-book? | Fixture tests: free, busy, out of hours, unclear, and two runs at once | One double-booking is a stop |
 | Does it earn its place? | Cost per application from `llm_calls`; payback against ₹1,000/hour of Riya's time | Payback over 12 months |
 
 ---
