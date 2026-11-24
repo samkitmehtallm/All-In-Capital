@@ -200,6 +200,58 @@
   }
 
   /*
+   * The two buttons. 44px minimum height, which is the tap target the rest of
+   * this design holds to, and the gradient marks the primary action only.
+   */
+  .btn-signal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 0.875rem;
+    border-radius: var(--radius-chip);
+    background-image: var(--gradient-signal);
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 600;
+    transition:
+      opacity 140ms var(--ease-out-quick),
+      transform 140ms var(--ease-out-quick);
+  }
+
+  .btn-signal:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-quiet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 0.875rem;
+    border-radius: var(--radius-chip);
+    border: 1px solid var(--color-hairline);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    transition:
+      border-color 140ms var(--ease-out-quick),
+      color 140ms var(--ease-out-quick);
+  }
+
+  .btn-quiet:hover:not(:disabled) {
+    border-color: var(--color-signal);
+    color: var(--color-signal);
+  }
+
+  .btn-quiet:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /*
    * ALERT treatment: solid fill, white, bold.
    *
    * Nothing decorative uses this combination, which is what lets a gate chip stay

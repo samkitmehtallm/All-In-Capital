@@ -280,6 +280,111 @@ drain look stuck.
 
 ---
 
+## D13. Riya's own emails decide whether a check is right
+
+The brief hands over the one test that can condemn a rule instead of a draft:
+"check that all of Riya's clean emails pass the checks (a check Riya fails is a
+wrong check)." Running the linter over all 60 rows of her export is therefore the
+first test in `tests/email-lint.test.ts`, not an afterthought, and it passes 58
+of 60 -- failing exactly the two rows the brief planted, for exactly the reasons
+they were planted:
+
+```
+  L2-030  length            136 words; the limit for call_invite is 80
+  L2-054  slots             offers no two times
+  L2-054  summary_signoff   "kind regards"
+```
+
+Three rules are not what a first reading of the brief would produce, and in each
+case her emails are why.
+
+**Two offered times, not two placeholders.** The brief says `{slot_1}` and
+`{slot_2}` "stay as placeholders in the draft", so the obvious rule is to require
+those literal strings. Every one of her 58 clean emails offers two real dates
+instead, because a sent email has had its times filled in. A rule demanding the
+placeholder would fail all 58 and would, by the brief's own test, be the wrong
+rule. The rule is "offers two times": the placeholders satisfy it in a draft, two
+weekdays satisfy it in a sent email.
+
+**"unusual" and "rare" are not praise.** 58 of 58 of her emails frame the opening
+number with one or the other. They are observations about a statistic, not
+compliments about a person, and the brief's actual words -- "no praise unless
+it's backed by a specific fact" -- are already enforced by the rule that makes
+the first sentence cite a number.
+
+**Aditya is not a lint rule.** L2-057 is a hardware founder Riya invited without
+mentioning him. The composer always adds the line for hardware and deeptech,
+because the brief's template says to; the linter must not fail a draft for its
+absence, or her own email fails. The brief's rule list does not include it, and
+L2-057 is why that is right rather than an oversight.
+
+The examples that get shown to the model are chosen by the same linter, so the
+rule list and the example set cannot drift apart. An example the linter would
+reject must not be held up as the thing to copy, or the next draft inherits the
+fault and gets rejected for it.
+
+Matching is on the situation -- sector, stage, founder type, traction -- not on
+the prose. Body-to-body similarity retrieves emails that are worded alike, when
+what is wanted is emails written to a founder in a like position.
+
+---
+
+## D14. Three findings from drafting against the real ten
+
+Ten invites, nine passing the checks first time, 44 to 58 words against her own
+42 to 61, at Rs 0.065 each. Getting there turned up three faults worth recording,
+because none of them would have shown up in a test.
+
+**A rejection was inventing its own reason.** The first GrainKind pass declined
+it because "your 90-day repeat rate of 38% is not high enough". The repeat rate
+is the best thing about GrainKind; its actual problem is a market size stated at
+ten times its own inputs. The cause was that I read `assessments.against_it`,
+which is a column nothing writes -- the narrative is derived at read time from
+the criterion scores. Given facts and no reasoning, a model manufactures a
+rationale from whatever it was handed, and a rejection built on a made-up reason
+is worse than no email. Drafting now goes through `getApplication`, the same
+function the screen uses, so the email can only argue what Riya can see it
+arguing.
+
+**A wrong view name hid behind a sensible default.** The recommendation was read
+from `assessments` with `view: 'base'`. There is no such view -- they are
+`revealed` and `written` -- so the lookup found nothing and every application
+silently fell back to the "dig" template. The draft looked fine and was the wrong
+kind of email. A scored application with no assessment now throws.
+
+**The lint feedback has to be template-aware.** A GrainKind pass failed
+`first_sentence_number` three generations running. The fix text told it to open
+with a number "and why it is unusual for this stage and sector" -- which asks a
+decline to compliment the company it is turning down. The model either flattered
+or ignored it. Each template now carries its own opening advice, and the same
+pass then passed first time.
+
+One thing this run did **not** prove, which matters: all ten currently score as a
+pass, so following the recommendation never reaches the invite -- the only
+template the examples loop and the slot placeholders apply to. Those ten invites
+were drafted by overriding the template, and the override exists in the composer
+for the same reason. The underlying cause is the threshold problem in D11, still
+unresolved.
+
+---
+
+## D15. The server boundary is a test, not a marker
+
+`import 'server-only'` throws the moment a plain Node process loads the module,
+and both `pnpm draft` and `pnpm worker` load modules that also serve routes. It
+is also not transitive: marking a caller never protected `getStore` underneath
+it, which is where the service key actually lives.
+
+So the boundary is asserted by reading the import graph instead
+(`tests/server-only-modules.test.ts`): no client component may reach the
+database, the gateway, the queue or the email drafter, and a violation is
+reported as the chain that got there. This is stronger than the marker in two
+ways -- it covers the modules that cannot carry one, and it names the path rather
+than failing in a bundler. The linter itself is deliberately dependency-free so
+the composer can import it in the browser, and a test asserts that too.
+
+---
+
 ## Appendix: what the ten applications contain
 
 Established by reading the files, before any scoring. Phase 2 reports what the

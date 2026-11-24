@@ -1,4 +1,13 @@
-import 'server-only';
+/*
+ * Not marked `server-only`, though it reads the database.
+ *
+ * `pnpm draft` reaches this module through the email composer, and that marker
+ * throws the moment a plain Node process loads it. The boundary it was stating
+ * is now asserted by `tests/server-only-modules.test.ts`, which reads the import
+ * graph of every client component -- stronger than the marker, because it also
+ * covers the modules that cannot carry one and names the chain when it breaks.
+ */
+
 
 /**
  * Data for one application screen.

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { DecisionPanel } from '../../../components/decision-panel';
+import { EmailComposer } from '../../../components/email-composer';
 import { SourceLink } from '../../../components/source-drawer';
 import {
   getApplication,
@@ -204,6 +205,8 @@ export default async function ApplicationPage({ params }: { params: Promise<{ sl
             recommendation={app.recommendation}
             redCheckCount={redChecks.length}
           />
+
+          <EmailComposer slug={app.slug} company={app.company} />
         </aside>
       </div>
     </div>

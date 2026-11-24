@@ -19,7 +19,9 @@
     "export:sql": "tsx scripts/export-seed-sql.ts",
     "gateway": "npx -y @portkey-ai/gateway",
     "live-check": "tsx scripts/live-check.ts",
-    "thresholds": "tsx scripts/derive-thresholds.ts"
+    "thresholds": "tsx scripts/derive-thresholds.ts",
+    "seed:examples": "tsx scripts/seed-style-examples.ts",
+    "draft": "tsx scripts/draft-email.ts"
   },
   "dependencies": {
     "@google/genai": "^3.6.1",
