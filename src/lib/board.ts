@@ -152,6 +152,17 @@ export async function getBoard(): Promise<Board> {
       label: 'Existing investors',
     });
 
+    // Gates the pipeline has already decided, including the two that need a model
+    // or a vector. G1 is recomputed live only as a fallback, so an application that
+    // has been ingested but not yet run through the pipeline still shows the one
+    // rule that can be checked from the form alone.
+    const storedGates = await store.select<{
+      gate_key: string;
+      tripped: boolean;
+      plain_name: string;
+      reason: string;
+    }>('gate_results', { application_id: app.id, tripped: true });
+
     const g1 = evaluateG1({
       stageDeclared: app.stage_declared,
       raiseText: app.raise_text,
@@ -165,9 +176,22 @@ export async function getBoard(): Promise<Board> {
       headline: string;
     }>('assessments', { application_id: app.id });
 
+    const gates: GateResult[] = storedGates.length
+      ? storedGates.map((g) => ({
+          gateKey: g.gate_key as GateResult['gateKey'],
+          tripped: true,
+          plainName: g.plain_name,
+          reason: g.reason,
+          citations: [],
+          decidedBy: 'code',
+        }))
+      : g1.tripped
+        ? [g1]
+        : [];
+
     // A tripped rule puts it in the Check first lane even before anything is scored.
     // Riya still decides; the lane only changes the order she reads things in.
-    const lane: Lane | null = assessment?.lane ?? (g1.tripped ? 'check_first' : null);
+    const lane: Lane | null = assessment?.lane ?? (gates.length > 0 ? 'check_first' : null);
 
     cards.push({
       slug: app.slug,
@@ -184,7 +208,7 @@ export async function getBoard(): Promise<Board> {
       lane,
       ratingWord: assessment?.rating_word ?? null,
       judgement: assessment?.headline ?? null,
-      gates: g1.tripped ? [g1] : [],
+      gates,
       state: assessment ? 'scored' : 'read',
     });
   }
@@ -192,7 +216,10 @@ export async function getBoard(): Promise<Board> {
   cards.sort((a, b) => a.company.localeCompare(b.company));
 
   const scoredCount = cards.filter((c) => c.state === 'scored').length;
-  const gated = cards.filter((c) => c.gates.length > 0);
+  // Counted from the lane, so the headline can never disagree with the column
+  // beneath it. It previously recomputed one gate and said "one to check first"
+  // above a column holding six.
+  const gated = cards.filter((c) => c.lane === 'check_first');
 
   // Meetings the tool booked on its own. Riya clicked send on the first letter and
   // nothing else, so this strip is how she finds out what happened next.
@@ -247,11 +274,24 @@ function buildHeadline(total: number, scored: number, gated: number): string {
           : 'None has tripped a rule';
     return `${spell(total)} applications read. ${gatePart}.`;
   }
-  return `${spell(scored)} of ${spell(total)} scored; ${spell(gated)} to check first.`;
+  if (scored === total) {
+    return gated === 0
+      ? `All ${lower(total)} scored, and none has tripped a rule.`
+      : `All ${lower(total)} scored. ${spell(gated)} to check first.`;
+  }
+  return `${spell(scored)} of ${lower(total)} scored. ${spell(gated)} to check first.`;
 }
 
+const WORDS = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+
+/** Sentence-initial: "Two worth a call". */
 function spell(n: number): string {
-  const words = ['None', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
-  const word = words[n];
-  return word ?? String(n);
+  const word = WORDS[n];
+  if (!word) return String(n);
+  return word[0].toUpperCase() + word.slice(1);
+}
+
+/** Mid-sentence: "All ten scored". */
+function lower(n: number): string {
+  return WORDS[n] ?? String(n);
 }
