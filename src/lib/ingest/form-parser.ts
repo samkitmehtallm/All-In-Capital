@@ -206,7 +206,19 @@ export interface ParsedFounder {
 export function parseFounders(fields: ParsedField[]): ParsedFounder[] {
   const founderFields = fields.filter((f) => /^Founder( \d)?$/.test(f.label));
   return founderFields.map((f, i) => {
-    const value = f.value;
+    // Repair URLs the PDF broke across lines. "linkedin.com/in/ritu-\nhegde-example"
+    // normalises to "...ritu- hegde-example", and a naive match stops at the space,
+    // yielding a truncated profile URL that still looks plausible. Rejoin a hyphen
+    // followed by whitespace, repeatedly, since a long slug can wrap twice.
+    let value = f.value;
+    for (let pass = 0; pass < 3; pass += 1) {
+      const repaired = value.replace(
+        /(linkedin\.com\/in\/[A-Za-z0-9_-]*)-\s+([A-Za-z0-9_-]+)/gi,
+        '$1-$2',
+      );
+      if (repaired === value) break;
+      value = repaired;
+    }
     const linkedin = /((?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[A-Za-z0-9_-]+)/i.exec(value);
 
     // Name: up to the first comma or full stop. The title is lifted off first,
@@ -219,7 +231,10 @@ export function parseFounders(fields: ParsedField[]): ParsedFounder[] {
     const nameMatch = /^([A-Z][A-Za-z'’-]*(?:\s+[A-Z][A-Za-z'’-]*)*)/.exec(head);
     const fullName = `${title}${nameMatch ? nameMatch[1] : head}`.trim();
 
-    const roleMatch = /,\s*((?:Founder and )?(?:CEO|CTO|COO|Co-founder|Founder|Growth)[^.]*)/i.exec(value);
+    // Capture the role word only. Running to the first full stop breaks on
+    // "Aarav Deshmukh, CEO LinkedIn: linkedin.com/in/..." where that stop is
+    // inside the URL, producing the role "CEO LinkedIn: linkedin".
+    const roleMatch = /,\s*((?:Founder and )?(?:CEO|CTO|COO|Co-founder|Founder|Growth))\b/i.exec(value);
 
     return {
       ordinal: i + 1,

@@ -108,6 +108,18 @@ describe('parseFounders', () => {
       );
       for (const f of founders) {
         assert.ok(f.linkedinUrl, `${company}: ${f.token} lost its LinkedIn URL`);
+        // A URL that stops at a hyphen is a PDF line break read as the end of the
+        // slug. It still looks like a URL, which is why it has to be asserted.
+        assert.doesNotMatch(
+          f.linkedinUrl ?? '',
+          /-$/,
+          `${company}: ${f.token} LinkedIn URL is truncated at a line break`,
+        );
+        assert.match(
+          f.linkedinUrl ?? '',
+          /linkedin\.com\/in\/[a-z0-9-]*example$/i,
+          `${company}: ${f.token} LinkedIn URL is incomplete`,
+        );
       }
       assert.deepEqual(
         founders.map((f) => f.token),

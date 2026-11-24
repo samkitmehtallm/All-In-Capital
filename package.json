@@ -15,7 +15,8 @@
     "calibrate": "tsx scripts/calibrate.ts",
     "cost": "tsx scripts/cost-report.ts",
     "loadtest": "tsx scripts/load-test.ts",
-    "contrast": "tsx scripts/check-contrast.ts"
+    "contrast": "tsx scripts/check-contrast.ts",
+    "export:sql": "tsx scripts/export-seed-sql.ts"
   },
   "dependencies": {
     "@google/genai": "^3.6.1",
